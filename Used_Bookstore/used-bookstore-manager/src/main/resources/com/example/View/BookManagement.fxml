@@ -4,7 +4,6 @@
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.*?>
 <?import javafx.geometry.Insets?>
-<?import javafx.geometry.Pos?>
 
 <BorderPane xmlns:fx="http://javafx.com/fxml"
             fx:controller="com.example.controller.BookManagementController"
@@ -19,11 +18,11 @@
         </HBox>
     </top>
 
-    <!-- Table Center -->
+    <!-- Center Table -->
     <center>
         <VBox spacing="15" style="-fx-padding: 20;">
             <HBox spacing="10">
-                <TextField fx:id="timkiem" promptText="🔍 Tìm theo tên/tác giả/thể loại"
+                <TextField fx:id="searchField" promptText="🔍 Tìm kiếm theo tên sách hoặc tác giả"
                            style="-fx-pref-width: 300; -fx-background-radius: 6;"/>
                 <Button text="Tìm kiếm" onAction="#searchBook"
                         style="-fx-background-color: #3498db; -fx-text-fill: white;"/>
@@ -32,69 +31,18 @@
                         style="-fx-background-color: #2ecc71; -fx-text-fill: white;"/>
             </HBox>
 
-            <TableView fx:id="bookTable" prefHeight="420">
+            <TableView fx:id="bookTable" prefHeight="500">
                 <columns>
-                    <TableColumn fx:id="colId" text="ID" prefWidth="40"/>
-                    <TableColumn fx:id="colTitle" text="Tên sách" prefWidth="180"/>
-                    <TableColumn fx:id="colAuthor" text="Tác giả" prefWidth="130"/>
+                    <TableColumn fx:id="colId" text="ID" prefWidth="50"/>
+                    <TableColumn fx:id="colTitle" text="Tên sách" prefWidth="200"/>
+                    <TableColumn fx:id="colAuthor" text="Tác giả" prefWidth="150"/>
                     <TableColumn fx:id="colCategory" text="Thể loại" prefWidth="100"/>
-                    <TableColumn fx:id="colPrice" text="Giá bán" prefWidth="90"/>
-                    <TableColumn fx:id="colStock" text="Tồn kho" prefWidth="70"/>
-                    <TableColumn fx:id="colRating" text="Đánh giá" prefWidth="80"/>
+                    <TableColumn fx:id="colPrice" text="Giá bán" prefWidth="100"/>
+                    <TableColumn fx:id="colStock" text="Tồn kho" prefWidth="80"/>
+                    <TableColumn fx:id="colRating" text="Đánh giá" prefWidth="100"/>
                     <TableColumn fx:id="colActions" text="Hành động" prefWidth="150"/>
                 </columns>
             </TableView>
         </VBox>
     </center>
-
-    <!-- Form Bottom -->
-    <bottom>
-        <VBox fx:id="inputSection" spacing="10" padding="15"
-              visible="false" managed="false"
-              style="-fx-border-color: #ccc; -fx-border-width: 1;">
-            <GridPane hgap="10" vgap="10">
-                <columnConstraints>
-                    <ColumnConstraints percentWidth="30"/>
-                    <ColumnConstraints percentWidth="70"/>
-                </columnConstraints>
-
-                <Label text="Tên sách:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
-                <TextField fx:id="titleInput" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
-
-                <Label text="Tác giả:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
-                <TextField fx:id="authorInput" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
-
-                <Label text="Thể loại:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
-                <TextField fx:id="categoryInput" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
-
-                <Label text="NXB:" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
-                <TextField fx:id="publisherInput" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
-
-                <Label text="Năm XB:" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
-                <TextField fx:id="yearInput" GridPane.rowIndex="4" GridPane.columnIndex="1"/>
-
-                <Label text="Giá nhập:" GridPane.rowIndex="5" GridPane.columnIndex="0"/>
-                <TextField fx:id="importPriceInput" GridPane.rowIndex="5" GridPane.columnIndex="1"/>
-
-                <Label text="Giá bán:" GridPane.rowIndex="6" GridPane.columnIndex="0"/>
-                <TextField fx:id="priceInput" GridPane.rowIndex="6" GridPane.columnIndex="1"/>
-
-                <Label text="Tình trạng:" GridPane.rowIndex="7" GridPane.columnIndex="0"/>
-                <ComboBox fx:id="conditionComboBox" GridPane.rowIndex="7" GridPane.columnIndex="1"/>
-
-                <Label text="Số lượng tồn:" GridPane.rowIndex="8" GridPane.columnIndex="0"/>
-                <TextField fx:id="stockInput" GridPane.rowIndex="8" GridPane.columnIndex="1"/>
-
-                <Label text="Đánh giá:" GridPane.rowIndex="9" GridPane.columnIndex="0"/>
-                <TextField fx:id="ratingInput" GridPane.rowIndex="9" GridPane.columnIndex="1"/>
-
-                <Label text="Ảnh bìa:" GridPane.rowIndex="10" GridPane.columnIndex="0"/>
-                <ImageView fx:id="bookImageView" fitHeight="150" fitWidth="100" preserveRatio="true"
-                           style="-fx-cursor: hand;" GridPane.rowIndex="10" GridPane.columnIndex="1"/>
-
-                <Button fx:id="addBookButton" text="Thêm sách" onAction="#handleAddBook"
-                        GridPane.rowIndex="11" GridPane.columnIndex="1"/>
-            </GridPane>
-        </VBox>
-    </bottom>
 </BorderPane>

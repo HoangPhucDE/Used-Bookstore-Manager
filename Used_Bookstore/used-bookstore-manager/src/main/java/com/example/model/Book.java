@@ -48,6 +48,7 @@ public class Book {
     public String getImagePath() { return imagePath.get(); }
 
     // Setters
+    public void setId(int id) { this.id.set(id); }
     public void setTitle(String title) { this.title.set(title); }
     public void setAuthor(String author) { this.author.set(author); }
     public void setCategory(String category) { this.category.set(category); }
