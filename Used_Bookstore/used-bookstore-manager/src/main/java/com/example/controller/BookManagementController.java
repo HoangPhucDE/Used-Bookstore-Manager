@@ -9,6 +9,7 @@ import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Window;
 
@@ -31,7 +32,7 @@ public class BookManagementController {
     @FXML private ComboBox<String> conditionComboBox;
     @FXML private TextField stockInput;
     @FXML private TextField ratingInput;
-    @FXML private HBox inputSection;
+    @FXML private VBox inputSection;
     @FXML private Button addBookButton;
     @FXML private ImageView bookImageView;
 
@@ -294,4 +295,24 @@ public class BookManagementController {
         alert.setContentText(msg);
         alert.showAndWait();
     }
+
+    @FXML
+    private void searchBook() {
+        String keyword = timkiem.getText().toLowerCase().trim();
+        if (keyword.isEmpty()) {
+            bookTable.setItems(bookList); // Hiển thị lại tất cả nếu rỗng
+            return;
+        }
+
+        ObservableList<Book> filteredList = FXCollections.observableArrayList();
+        for (Book book : bookList) {
+            if (book.getTitle().toLowerCase().contains(keyword) ||
+                    book.getAuthor().toLowerCase().contains(keyword) ||
+                    book.getCategory().toLowerCase().contains(keyword)) {
+                filteredList.add(book);
+            }
+        }
+        bookTable.setItems(filteredList);
+    }
+
 }

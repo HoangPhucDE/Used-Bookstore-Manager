@@ -1,3 +1,4 @@
+
 package com.example.controller;
 
 import java.io.IOException;
@@ -84,9 +85,9 @@ public class HomeController {
     public void setUser(String username, String role) {
         this.role = role;
         this.username = username;
-         if (usernameLabel != null) {
-        usernameLabel.setText("👤 " + username);
-    }
+        if (usernameLabel != null) {
+            usernameLabel.setText("👤 " + username);
+        }
 
         switch (role) {
             case "admin" -> {
@@ -141,7 +142,7 @@ public class HomeController {
     @FXML
     private void goBook() {
         setActiveButton(bookBtn);
-        loadPage("/com/example/View/BookManagement.fxml");
+        loadPage("/com/example/view/BookManagement.fxml");
     }
 
     @FXML
