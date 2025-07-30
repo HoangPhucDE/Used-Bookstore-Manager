@@ -1,3 +1,4 @@
+
 package com.example.controller;
 
 import java.io.IOException;
@@ -8,7 +9,6 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
@@ -84,9 +84,9 @@ public class HomeController {
     public void setUser(String username, String role) {
         this.role = role;
         this.username = username;
-         if (usernameLabel != null) {
-        usernameLabel.setText("👤 " + username);
-    }
+        if (usernameLabel != null) {
+            usernameLabel.setText("👤 " + username);
+        }
 
         switch (role) {
             case "admin" -> {
