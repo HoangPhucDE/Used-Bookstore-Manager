@@ -47,7 +47,7 @@ public class HomeController {
         });
     }
 
-    public void setUser(String username, String role) {
+    public void setUser(int userID, String username, String role) {
         this.role = role;
         this.username = username;
         usernameLabel.setText("👤 " + username);
