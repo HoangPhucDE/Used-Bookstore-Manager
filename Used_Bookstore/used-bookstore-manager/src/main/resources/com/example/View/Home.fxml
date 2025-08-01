@@ -50,7 +50,7 @@
             <Button fx:id="employeeBtn" text="👥 Quản lý nhân viên" onAction="#goEmployee"
                     style="-fx-background-color: transparent; -fx-text-fill: #2c3e50; -fx-background-radius: 8; -fx-padding: 10 18; -fx-font-size: 14px; -fx-font-weight: 500; -fx-alignment: center-left;" prefWidth="250"/>
 
-            <Button fx:id="userBtn" text="🧑‍💼 Quản lý người dùng" onAction="#goUser"
+            <Button fx:id="userBtn" text="🧑‍💼 Quản lý khách hàng" onAction="#goUser"
                     style="-fx-background-color: transparent; -fx-text-fill: #2c3e50; -fx-background-radius: 8; -fx-padding: 10 18; -fx-font-size: 14px; -fx-font-weight: 500; -fx-alignment: center-left;" prefWidth="250"/>
 
             <Button fx:id="statsBtn" text="📊 Thống kê doanh thu" onAction="#goStats"
