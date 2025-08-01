@@ -28,6 +28,7 @@ public class BookManagementController {
     @FXML private TableColumn<Book, String> colTitle;
     @FXML private TableColumn<Book, String> colAuthor;
     @FXML private TableColumn<Book, String> colCategory;
+    @FXML private TableColumn<Book, Double> colImportPrice;  // ✅ Giá nhập
     @FXML private TableColumn<Book, Double> colPrice;
     @FXML private TableColumn<Book, Integer> colStock;
     @FXML private TableColumn<Book, Double> colRating;
@@ -43,7 +44,7 @@ public class BookManagementController {
         addActionButtons();
         handleDoubleClickRow();
 
-        if (!"admin".equalsIgnoreCase(com.example.controller.LoginController.currentUserRole)) {
+        if (!"admin".equalsIgnoreCase(LoginController.currentUserRole)) {
             addBookBtn.setVisible(false);
             addBookBtn.setManaged(false);
         }
@@ -54,6 +55,7 @@ public class BookManagementController {
         colTitle.setCellValueFactory(new PropertyValueFactory<>("title"));
         colAuthor.setCellValueFactory(new PropertyValueFactory<>("author"));
         colCategory.setCellValueFactory(new PropertyValueFactory<>("category"));
+        colImportPrice.setCellValueFactory(new PropertyValueFactory<>("importPrice")); // ✅
         colPrice.setCellValueFactory(new PropertyValueFactory<>("price"));
         colStock.setCellValueFactory(new PropertyValueFactory<>("stock"));
         colRating.setCellValueFactory(new PropertyValueFactory<>("rating"));
@@ -61,8 +63,9 @@ public class BookManagementController {
 
     private void loadBooksFromDatabase() {
         bookList.clear();
-        try (Connection conn = DatabaseConnection.getConnection()) {
-            ResultSet rs = conn.createStatement().executeQuery("SELECT * FROM sach");
+        try (Connection conn = DatabaseConnection.getConnection();
+             ResultSet rs = conn.createStatement().executeQuery("SELECT * FROM sach")) {
+
             while (rs.next()) {
                 bookList.add(new Book(
                         rs.getInt("ma_sach"),
@@ -90,7 +93,7 @@ public class BookManagementController {
             private final Button viewBtn = new Button("👁");
             private final Button editBtn = new Button("✏");
             private final Button deleteBtn = new Button("🗑");
-            private final HBox hbox = new HBox(5);
+            private final HBox hbox = new HBox(5, viewBtn, editBtn, deleteBtn);
 
             {
                 viewBtn.setStyle("-fx-background-color: #3498db; -fx-text-fill: white;");
@@ -111,16 +114,7 @@ public class BookManagementController {
             @Override
             protected void updateItem(Void item, boolean empty) {
                 super.updateItem(item, empty);
-                if (empty) {
-                    setGraphic(null);
-                } else {
-                    hbox.getChildren().clear();
-                    hbox.getChildren().add(viewBtn);
-                    if ("admin".equalsIgnoreCase(LoginController.currentUserRole)) {
-                        hbox.getChildren().addAll(editBtn, deleteBtn);
-                    }
-                    setGraphic(hbox);
-                }
+                setGraphic(empty ? null : hbox);
             }
         });
     }
@@ -130,8 +124,7 @@ public class BookManagementController {
             TableRow<Book> row = new TableRow<>();
             row.setOnMouseClicked(event -> {
                 if (!row.isEmpty() && event.getButton() == MouseButton.PRIMARY && event.getClickCount() == 2) {
-                    Book clickedBook = row.getItem();
-                    showBookDetails(clickedBook);
+                    showBookDetails(row.getItem());
                 }
             });
             return row;
@@ -168,12 +161,12 @@ public class BookManagementController {
         TextField title = new TextField();
         TextField author = new TextField();
         TextField category = new TextField();
+        TextField importPrice = new TextField(); // ✅
         TextField price = new TextField();
         TextField stock = new TextField();
         TextField rating = new TextField();
         ImageView imgPreview = new ImageView();
-        imgPreview.setFitWidth(100);
-        imgPreview.setFitHeight(120);
+        imgPreview.setFitWidth(100); imgPreview.setFitHeight(120);
 
         Button chooseImg = new Button("Chọn ảnh");
         final String[] imgPath = {null};
@@ -198,6 +191,7 @@ public class BookManagementController {
             title.setText(bookToEdit.getTitle());
             author.setText(bookToEdit.getAuthor());
             category.setText(bookToEdit.getCategory());
+            importPrice.setText(String.valueOf(bookToEdit.getImportPrice()));
             price.setText(String.valueOf(bookToEdit.getPrice()));
             stock.setText(String.valueOf(bookToEdit.getStock()));
             rating.setText(String.valueOf(bookToEdit.getRating()));
@@ -211,11 +205,12 @@ public class BookManagementController {
         grid.addRow(0, new Label("Tên sách:"), title);
         grid.addRow(1, new Label("Tác giả:"), author);
         grid.addRow(2, new Label("Thể loại:"), category);
-        grid.addRow(3, new Label("Giá bán:"), price);
-        grid.addRow(4, new Label("Tồn kho:"), stock);
-        grid.addRow(5, new Label("Đánh giá:"), rating);
-        grid.addRow(6, new Label("Ảnh:"), chooseImg);
-        grid.add(imgPreview, 1, 7);
+        grid.addRow(3, new Label("Giá nhập:"), importPrice); // ✅
+        grid.addRow(4, new Label("Giá bán:"), price);
+        grid.addRow(5, new Label("Tồn kho:"), stock);
+        grid.addRow(6, new Label("Đánh giá:"), rating);
+        grid.addRow(7, new Label("Ảnh:"), chooseImg);
+        grid.add(imgPreview, 1, 8);
 
         dialog.getDialogPane().setContent(grid);
 
@@ -224,16 +219,25 @@ public class BookManagementController {
                 try {
                     if (title.getText().isBlank() || author.getText().isBlank())
                         throw new Exception("Không được để trống tên hoặc tác giả");
-                    double p = Double.parseDouble(price.getText());
-                    int s = Integer.parseInt(stock.getText());
-                    double r = Double.parseDouble(rating.getText());
-                    if (p <= 0 || s < 0 || r < 0 || r > 5)
-                        throw new Exception("Giá > 0, tồn >= 0, đánh giá 0-5");
+
+                    double giaNhap = Double.parseDouble(importPrice.getText());
+                    double giaBan = Double.parseDouble(price.getText());
+                    int tonKho = Integer.parseInt(stock.getText());
+                    double dg = Double.parseDouble(rating.getText());
+
+                    if (giaNhap <= 0 || giaBan <= 0)
+                        throw new Exception("Giá nhập và bán phải lớn hơn 0");
+                    if (giaNhap > giaBan)
+                        throw new Exception("Giá nhập không được lớn hơn giá bán");
+                    if (tonKho < 0)
+                        throw new Exception("Tồn kho không hợp lệ");
+                    if (dg < 0 || dg > 5)
+                        throw new Exception("Đánh giá phải từ 0 đến 5");
 
                     return new Book(
                             bookToEdit != null ? bookToEdit.getId() : 0,
                             title.getText(), author.getText(), category.getText(),
-                            "", 0, 0, p, "", s, r, imgPath[0]
+                            "", 0, giaNhap, giaBan, "", tonKho, dg, imgPath[0]
                     );
                 } catch (Exception ex) {
                     showAlert("Lỗi nhập liệu", ex.getMessage());
@@ -262,34 +266,35 @@ public class BookManagementController {
         ImageView img = new ImageView();
         if (book.getImagePath() != null) {
             File file = new File("images", book.getImagePath());
-            if (file.exists())
-                img.setImage(new Image(file.toURI().toString()));
+            if (file.exists()) img.setImage(new Image(file.toURI().toString()));
         }
         img.setFitHeight(140); img.setFitWidth(100);
 
         grid.addRow(0, new Label("Tên sách:"), new Label(book.getTitle()));
         grid.addRow(1, new Label("Tác giả:"), new Label(book.getAuthor()));
         grid.addRow(2, new Label("Thể loại:"), new Label(book.getCategory()));
-        grid.addRow(3, new Label("Giá:"), new Label(book.getPrice() + " đ"));
-        grid.addRow(4, new Label("Tồn kho:"), new Label(String.valueOf(book.getStock())));
-        grid.addRow(5, new Label("Đánh giá:"), new Label(book.getRating() + "★"));
-        grid.add(img, 1, 6);
+        grid.addRow(3, new Label("Giá nhập:"), new Label(book.getImportPrice() + " đ")); // ✅
+        grid.addRow(4, new Label("Giá bán:"), new Label(book.getPrice() + " đ"));
+        grid.addRow(5, new Label("Tồn kho:"), new Label(String.valueOf(book.getStock())));
+        grid.addRow(6, new Label("Đánh giá:"), new Label(book.getRating() + "★"));
+        grid.add(img, 1, 7);
 
         dialog.getDialogPane().setContent(grid);
         dialog.showAndWait();
     }
 
     private void insertBookToDB(Book b) {
-        String sql = "INSERT INTO sach (ten_sach, tac_gia, the_loai, gia_ban, so_luong_ton, danh_gia, hinh_anh) VALUES (?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO sach (ten_sach, tac_gia, the_loai, gia_nhap, gia_ban, so_luong_ton, danh_gia, hinh_anh) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, b.getTitle());
             stmt.setString(2, b.getAuthor());
             stmt.setString(3, b.getCategory());
-            stmt.setDouble(4, b.getPrice());
-            stmt.setInt(5, b.getStock());
-            stmt.setDouble(6, b.getRating());
-            stmt.setString(7, b.getImagePath());
+            stmt.setDouble(4, b.getImportPrice());
+            stmt.setDouble(5, b.getPrice());
+            stmt.setInt(6, b.getStock());
+            stmt.setDouble(7, b.getRating());
+            stmt.setString(8, b.getImagePath());
             stmt.executeUpdate();
         } catch (SQLException e) {
             showAlert("Lỗi", "Không thể thêm sách: " + e.getMessage());
@@ -297,17 +302,18 @@ public class BookManagementController {
     }
 
     private void updateBookInDB(Book b) {
-        String sql = "UPDATE sach SET ten_sach=?, tac_gia=?, the_loai=?, gia_ban=?, so_luong_ton=?, danh_gia=?, hinh_anh=? WHERE ma_sach=?";
+        String sql = "UPDATE sach SET ten_sach=?, tac_gia=?, the_loai=?, gia_nhap=?, gia_ban=?, so_luong_ton=?, danh_gia=?, hinh_anh=? WHERE ma_sach=?";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, b.getTitle());
             stmt.setString(2, b.getAuthor());
             stmt.setString(3, b.getCategory());
-            stmt.setDouble(4, b.getPrice());
-            stmt.setInt(5, b.getStock());
-            stmt.setDouble(6, b.getRating());
-            stmt.setString(7, b.getImagePath());
-            stmt.setInt(8, b.getId());
+            stmt.setDouble(4, b.getImportPrice());
+            stmt.setDouble(5, b.getPrice());
+            stmt.setInt(6, b.getStock());
+            stmt.setDouble(7, b.getRating());
+            stmt.setString(8, b.getImagePath());
+            stmt.setInt(9, b.getId());
             stmt.executeUpdate();
         } catch (SQLException e) {
             showAlert("Lỗi", "Không thể cập nhật sách: " + e.getMessage());

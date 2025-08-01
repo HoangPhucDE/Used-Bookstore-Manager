@@ -24,12 +24,12 @@
             <HBox spacing="10" alignment="CENTER_LEFT">
                 <TextField fx:id="searchField"
                            promptText="🔍 Tìm sách theo tên hoặc tác giả"
-                           style="-fx-pref-width: 300; -fx-background-radius: 8;"/>
+                           style="-fx-pref-width: 300; -fx-background-radius: 8;" />
                 <Button text="Tìm kiếm" onAction="#searchBook"
-                        style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-background-radius: 8;"/>
+                        style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-background-radius: 8;" />
                 <Region HBox.hgrow="ALWAYS"/>
                 <Button fx:id="addBookBtn" text="➕ Thêm sách" onAction="#showAddBookDialog"
-                        style="-fx-background-color: #2ecc71; -fx-text-fill: white; -fx-background-radius: 8;"/>
+                        style="-fx-background-color: #2ecc71; -fx-text-fill: white; -fx-background-radius: 8;" />
             </HBox>
 
             <!-- Table -->
@@ -40,6 +40,7 @@
                     <TableColumn fx:id="colTitle" text="📖 Tên sách" prefWidth="200"/>
                     <TableColumn fx:id="colAuthor" text="✍ Tác giả" prefWidth="160"/>
                     <TableColumn fx:id="colCategory" text="📚 Thể loại" prefWidth="120"/>
+                    <TableColumn fx:id="colImportPrice" text="💰 Giá nhập" prefWidth="100"/>
                     <TableColumn fx:id="colPrice" text="💲 Giá bán" prefWidth="100"/>
                     <TableColumn fx:id="colStock" text="📦 Tồn kho" prefWidth="90"/>
                     <TableColumn fx:id="colRating" text="⭐ Đánh giá" prefWidth="90"/>
