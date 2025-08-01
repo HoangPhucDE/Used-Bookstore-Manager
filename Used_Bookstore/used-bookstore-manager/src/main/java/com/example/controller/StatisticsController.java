@@ -5,6 +5,8 @@ import com.example.model.RevenueByDate;
 import com.example.model.RevenueByBook;
 import com.example.model.RevenueByEmployee;
 import com.itextpdf.text.*;
+import com.itextpdf.text.pdf.BaseFont;
+import com.itextpdf.text.pdf.PdfPCell;
 import com.itextpdf.text.pdf.PdfPTable;
 import com.itextpdf.text.pdf.PdfWriter;
 import javafx.beans.property.SimpleDoubleProperty;
@@ -17,6 +19,7 @@ import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.stage.FileChooser;
 
+import java.io.File;
 import java.io.FileOutputStream;
 import java.sql.*;
 import java.time.LocalDate;
@@ -128,14 +131,14 @@ public class StatisticsController {
     private void loadRevenueByEmployee() {
         revenueByEmployeeList.clear();
         String sql = """
-            SELECT nv.ho_ten, COUNT(d.ma_don) AS so_hoa_don, SUM(d.tong_tien) AS tong_tien
-            FROM donhang d
-            JOIN taikhoan tk ON d.nguoi_tao_id = tk.id
-            JOIN nhanvien nv ON tk.id = nv.id_taikhoan
-            WHERE d.trang_thai = 'hoan_thanh'
-            GROUP BY nv.ho_ten
-            ORDER BY tong_tien DESC;
-        """;
+                    SELECT nv.ho_ten, COUNT(d.ma_don) AS so_hoa_don, SUM(d.tong_tien) AS tong_tien
+                    FROM donhang d
+                    JOIN taikhoan tk ON d.nguoi_tao_id = tk.id
+                    JOIN nhanvien nv ON tk.id = nv.id_taikhoan
+                    WHERE d.trang_thai = 'hoan_thanh'
+                    GROUP BY nv.ho_ten
+                    ORDER BY tong_tien DESC;
+                """;
 
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql);
@@ -161,41 +164,80 @@ public class StatisticsController {
         try {
             FileChooser fileChooser = new FileChooser();
             fileChooser.setTitle("Lưu file PDF");
-            fileChooser.setInitialFileName("bao_cao_doanh_thu.pdf");
+            fileChooser.setInitialFileName("bao_cao_thong_ke.pdf");
             fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("PDF files", "*.pdf"));
-
-            java.io.File file = fileChooser.showSaveDialog(null);
+            File file = fileChooser.showSaveDialog(null);
             if (file == null) return;
 
             Document document = new Document();
             PdfWriter.getInstance(document, new FileOutputStream(file));
             document.open();
 
-            document.add(new Paragraph("📅 BÁO CÁO DOANH THU THEO THỜI GIAN\n\n"));
+            BaseFont bf = BaseFont.createFont("Fonts/arial.ttf", BaseFont.IDENTITY_H, BaseFont.EMBEDDED);
+            Font font = new Font(bf, 12);
+            Font titleFont = new Font(bf, 14, Font.BOLD);
 
-            PdfPTable table = new PdfPTable(3);
-            table.addCell("Ngày");
-            table.addCell("Số hóa đơn");
-            table.addCell("Tổng doanh thu");
+            // Doanh thu theo ngày
+            document.add(new Paragraph("📅 DOANH THU THEO NGÀY\n\n", titleFont));
+            PdfPTable dateTable = new PdfPTable(3);
+            dateTable.setWidthPercentage(100);
+            dateTable.setWidths(new float[]{3, 3, 3});
+
+            dateTable.addCell(new PdfPCell(new Phrase("Ngày", font)));
+            dateTable.addCell(new PdfPCell(new Phrase("Số hóa đơn", font)));
+            dateTable.addCell(new PdfPCell(new Phrase("Tổng doanh thu", font)));
 
             for (RevenueByDate entry : revenueByDateList) {
-                table.addCell(entry.getDate().toString());
-                table.addCell(String.valueOf(entry.getInvoiceCount()));
-                table.addCell(String.format("%.0f", entry.getTotalRevenue()));
+                dateTable.addCell(new PdfPCell(new Phrase(entry.getDate().toString(), font)));
+                dateTable.addCell(new PdfPCell(new Phrase(String.valueOf(entry.getInvoiceCount()), font)));
+                dateTable.addCell(new PdfPCell(new Phrase(String.format("%.0f", entry.getTotalRevenue()), font)));
             }
 
+            document.add(dateTable);
+            document.add(new Paragraph("\n"));
+
+            // === 2. Thống kê sách bán chạy ===
+            document.add(new Paragraph("📚 SÁCH BÁN CHẠY\n\n", titleFont));
+            PdfPTable bookTable = new PdfPTable(2);
+            bookTable.setWidthPercentage(100);
+            bookTable.setWidths(new float[]{4, 2});
+
+            bookTable.addCell(new PdfPCell(new Phrase("Tên sách", font)));
+            bookTable.addCell(new PdfPCell(new Phrase("Số lượng bán", font)));
+
+            for (RevenueByBook book : revenueByBookList) {
+                bookTable.addCell(new PdfPCell(new Phrase(book.getBookName(), font)));
+                bookTable.addCell(new PdfPCell(new Phrase(String.valueOf(book.getQuantity()), font)));
+            }
+
+            document.add(bookTable);
+            document.add(new Paragraph("\n"));
+
+            // === 3. Doanh thu theo nhân viên ===
+            document.add(new Paragraph("👥 DOANH THU THEO NHÂN VIÊN\n\n", titleFont));
+            PdfPTable empTable = new PdfPTable(3);
+            empTable.setWidthPercentage(100);
+            empTable.setWidths(new float[]{4, 2, 3});
+
+            empTable.addCell(new PdfPCell(new Phrase("Tên nhân viên", font)));
+            empTable.addCell(new PdfPCell(new Phrase("Số hóa đơn", font)));
+            empTable.addCell(new PdfPCell(new Phrase("Tổng doanh thu", font)));
+
+            for (RevenueByEmployee emp : revenueByEmployeeList) {
+                empTable.addCell(new PdfPCell(new Phrase(emp.getEmployeeName(), font)));
+                empTable.addCell(new PdfPCell(new Phrase(String.valueOf(emp.getInvoiceCount()), font)));
+                empTable.addCell(new PdfPCell(new Phrase(String.format("%.0f", emp.getRevenue()), font)));
+            }
+
+            document.add(empTable);
             document.close();
-            showAlert("Thành công", "Xuất PDF thành công!");
+
+            showAlert("Thành công", "Xuất PDF toàn bộ thống kê thành công!");
 
         } catch (Exception e) {
             e.printStackTrace();
             showAlert("Lỗi", "Xuất PDF thất bại.");
         }
-    }
-
-    @FXML
-    public void handleExportExcel() {
-        showAlert("Thông báo", "Chức năng xuất Excel đang được phát triển.");
     }
 
     private void showAlert(String title, String content) {
