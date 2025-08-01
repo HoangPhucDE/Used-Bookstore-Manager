@@ -50,10 +50,34 @@ public class SalesController {
                 autoFillCustomerInfo();
             }
         });
+
+        // click đúp vào dòng sách để xem chi tiết
+        orderTable.setRowFactory(tv -> {
+            TableRow<OrderItem> row = new TableRow<>();
+            row.setOnMouseClicked(event -> {
+                if (event.getClickCount() == 2 && !row.isEmpty()) {
+                    OrderItem item = row.getItem();
+
+                    // Tìm Book theo title
+                    Book selectedBook = allBooks.stream()
+                            .filter(book -> book.getTitle().equals(item.getBookTitle()))
+                            .findFirst()
+                            .orElse(null);
+
+                    if (selectedBook != null) {
+                        com.example.util.BookDialogUtil.showBookDetails(selectedBook);
+                    } else {
+                        showAlert("Thông báo", "Không tìm thấy chi tiết sách.");
+                    }
+                }
+            });
+            return row;
+        });
+
     }
 
     private Integer createCustomerAccountIfNotExists(Connection conn, String phone, String email, String name, String address) throws SQLException {
-        // 1. Kiểm tra tài khoản theo số điện thoại (username)
+        // Kiểm tra tài khoản theo số điện thoại
         String checkUserQuery = "SELECT id FROM taikhoan WHERE username = ?";
         try (PreparedStatement checkUserStmt = conn.prepareStatement(checkUserQuery)) {
             checkUserStmt.setString(1, phone);
@@ -61,17 +85,17 @@ public class SalesController {
             if (userRs.next()) {
                 int existingId = userRs.getInt("id");
 
-                // 1.1 Kiểm tra khách hàng đã tồn tại theo id_taikhoan
+                // Kiểm tra khách hàng đã tồn tại theo id_taikhoan
                 String checkKHQuery = "SELECT ma_kh FROM khachhang WHERE id_taikhoan = ?";
                 try (PreparedStatement checkKHStmt = conn.prepareStatement(checkKHQuery)) {
                     checkKHStmt.setInt(1, existingId);
                     ResultSet khRs = checkKHStmt.executeQuery();
                     if (khRs.next()) {
-                        return existingId; // ✅ đã có tài khoản và khách hàng
+                        return existingId; // đã có tài khoản và khách hàng
                     }
                 }
 
-                // 1.2 Nếu chưa có khách hàng, thì tạo khách hàng
+                // Nếu chưa có khách hàng, thì tạo khách hàng
                 String insertKHQuery = """
                 INSERT INTO khachhang (ho_ten, email, sdt, dia_chi, id_taikhoan)
                 VALUES (?, ?, ?, ?, ?)
@@ -89,7 +113,7 @@ public class SalesController {
             }
         }
 
-        // 2. Kiểm tra email đã tồn tại chưa (email UNIQUE)
+        // Kiểm tra email đã tồn tại chưa (email UNIQUE)
         String checkEmailQuery = "SELECT id FROM taikhoan WHERE email = ?";
         try (PreparedStatement checkEmailStmt = conn.prepareStatement(checkEmailQuery)) {
             checkEmailStmt.setString(1, email);
@@ -100,7 +124,7 @@ public class SalesController {
             }
         }
 
-        // 3. Hỏi người dùng có muốn tạo tài khoản mới không
+        // Hỏi người dùng có muốn tạo tài khoản mới không
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
         confirm.setTitle("Tạo tài khoản mới");
         confirm.setHeaderText(null);
@@ -109,7 +133,7 @@ public class SalesController {
             return null; // người dùng từ chối
         }
 
-        // 4. Tạo tài khoản mới
+        // Tạo tài khoản mới
         int accountId;
         String insertAccountQuery = """
         INSERT INTO taikhoan (username, mat_khau, vai_tro, loai_nguoi_dung, email, trang_thai, ngay_dang_ky)
@@ -129,7 +153,7 @@ public class SalesController {
             }
         }
 
-        // 5. Tạo khách hàng mới gắn với tài khoản
+        // Tạo khách hàng mới gắn với tài khoản
         String insertCustomerQuery = """
         INSERT INTO khachhang (ho_ten, email, sdt, dia_chi, id_taikhoan)
         VALUES (?, ?, ?, ?, ?)
@@ -300,14 +324,14 @@ public class SalesController {
         try (Connection conn = DatabaseConnection.getConnection()) {
             conn.setAutoCommit(false);
 
-            // ✅ Tạo tài khoản và khách hàng nếu chưa có
+            // Tạo tài khoản và khách hàng nếu chưa có
             Integer userId = createCustomerAccountIfNotExists(conn, phone, email, name, address);
             if (userId == null) {
                 conn.rollback();
                 return;
             }
 
-            // ✅ Tạo đơn hàng
+            // Tạo đơn hàng
             String insertOrder = """
             INSERT INTO donhang (ten_kh, sdt, email, dia_chi, tong_tien, nguoi_tao_id, ngay_tao, loai_don)
             VALUES (?, ?, ?, ?, ?, ?, NOW(), ?)
@@ -322,7 +346,7 @@ public class SalesController {
                 orderStmt.setString(3, email);
                 orderStmt.setString(4, address);
                 orderStmt.setDouble(5, total);
-                orderStmt.setInt(6, userId); // ✅ dùng ID vừa tạo
+                orderStmt.setInt(6, userId); // dùng ID vừa tạo
                 orderStmt.setString(7, orderType);
 
                 orderStmt.executeUpdate();
@@ -336,7 +360,7 @@ public class SalesController {
 
                 int orderId = generatedKeys.getInt(1);
 
-                // ✅ Ghi chi tiết đơn hàng + cập nhật tồn kho
+                // Ghi chi tiết đơn hàng + cập nhật tồn kho
                 String insertItem = "INSERT INTO chitiet_donhang (ma_don, ma_sach, so_luong, don_gia) VALUES (?, ?, ?, ?)";
                 String updateStock = "UPDATE sach SET so_luong_ton = so_luong_ton - ? WHERE ma_sach = ?";
 
@@ -364,7 +388,7 @@ public class SalesController {
                     stockStmt.executeBatch();
                 }
 
-                // ✅ Commit và hiển thị kết quả
+                // Commit và hiển thị kết quả
                 conn.commit();
                 showRecentOrder(orderId);
                 showAlert("Thành công", "Đơn hàng đã được lưu. Tổng tiền: " + total + " VNĐ");
