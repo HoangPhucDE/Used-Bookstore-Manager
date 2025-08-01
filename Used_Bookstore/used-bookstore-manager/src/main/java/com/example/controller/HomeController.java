@@ -87,7 +87,7 @@ public class HomeController {
     @FXML private void goHome()      { setActiveButton(homeBtn); loadPage("/com/example/View/Dashboard.fxml"); }
     @FXML private void goBook()      { setActiveButton(bookBtn); loadPage("/com/example/View/BookManagement.fxml"); }
     @FXML private void goEmployee()  { setActiveButton(employeeBtn); loadPage("/com/example/View/EmployeeManagement.fxml"); }
-    @FXML private void goUser()      { setActiveButton(userBtn); loadPage("/com/example/View/UserManagement.fxml"); }
+    @FXML private void goUser()      { setActiveButton(userBtn); loadPage("/com/example/View/CustomerManagement.fxml"); }
     @FXML private void goSales()     { setActiveButton(salesBtn); loadPage("/com/example/View/SalesView.fxml"); }
     @FXML private void goStats()     { setActiveButton(statsBtn); loadPage("/com/example/View/Statistics.fxml"); }
     @FXML private void goOrders()    { setActiveButton(orderStatusBtn); loadPage("/com/example/View/OrderStatus.fxml"); }
