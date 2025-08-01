@@ -134,7 +134,7 @@ public class SalesController {
             return;
         }
 
-        cartItems.add(new OrderItem(bookTitle, quantity, selectedBook.getPrice()));
+        cartItems.add(new OrderItem(selectedBook.getId(), bookTitle, quantity, selectedBook.getPrice()));
         updateTotal();
         quantityField.clear();
     }
