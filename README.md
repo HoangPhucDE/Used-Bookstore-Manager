@@ -3,10 +3,10 @@
 Hello! This is a project from **Van Hien University**.
 
 ### 👨‍👩‍👧‍👦 Nhóm thực hiện:
-- 👑 **Nguyen Nhat Vi** (Team Leader)
+- 👑 **Nguyen Hoang Phuc**  (Team Leader)
 - 👩‍💻 Tran Thi Van Anh
+- 👩‍💻Nguyen Nhat Vi
 - 👨‍💻 Nguyen Chi Khanh
-- 👨‍💻 Nguyen Hoang Phuc
 
 ---
 
