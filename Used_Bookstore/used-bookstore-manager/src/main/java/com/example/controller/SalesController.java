@@ -50,7 +50,126 @@ public class SalesController {
                 autoFillCustomerInfo();
             }
         });
+
+        // click đúp vào dòng sách để xem chi tiết
+        orderTable.setRowFactory(tv -> {
+            TableRow<OrderItem> row = new TableRow<>();
+            row.setOnMouseClicked(event -> {
+                if (event.getClickCount() == 2 && !row.isEmpty()) {
+                    OrderItem item = row.getItem();
+
+                    // Tìm Book theo title
+                    Book selectedBook = allBooks.stream()
+                            .filter(book -> book.getTitle().equals(item.getBookTitle()))
+                            .findFirst()
+                            .orElse(null);
+
+                    if (selectedBook != null) {
+                        com.example.util.BookDialogUtil.showBookDetails(selectedBook);
+                    } else {
+                        showAlert("Thông báo", "Không tìm thấy chi tiết sách.");
+                    }
+                }
+            });
+            return row;
+        });
+
     }
+
+    private Integer createCustomerAccountIfNotExists(Connection conn, String phone, String email, String name, String address) throws SQLException {
+        // Kiểm tra tài khoản theo số điện thoại
+        String checkUserQuery = "SELECT id FROM taikhoan WHERE username = ?";
+        try (PreparedStatement checkUserStmt = conn.prepareStatement(checkUserQuery)) {
+            checkUserStmt.setString(1, phone);
+            ResultSet userRs = checkUserStmt.executeQuery();
+            if (userRs.next()) {
+                int existingId = userRs.getInt("id");
+
+                // Kiểm tra khách hàng đã tồn tại theo id_taikhoan
+                String checkKHQuery = "SELECT ma_kh FROM khachhang WHERE id_taikhoan = ?";
+                try (PreparedStatement checkKHStmt = conn.prepareStatement(checkKHQuery)) {
+                    checkKHStmt.setInt(1, existingId);
+                    ResultSet khRs = checkKHStmt.executeQuery();
+                    if (khRs.next()) {
+                        return existingId; // đã có tài khoản và khách hàng
+                    }
+                }
+
+                // Nếu chưa có khách hàng, thì tạo khách hàng
+                String insertKHQuery = """
+                INSERT INTO khachhang (ho_ten, email, sdt, dia_chi, id_taikhoan)
+                VALUES (?, ?, ?, ?, ?)
+            """;
+                try (PreparedStatement insertKHStmt = conn.prepareStatement(insertKHQuery)) {
+                    insertKHStmt.setString(1, name);
+                    insertKHStmt.setString(2, email);
+                    insertKHStmt.setString(3, phone);
+                    insertKHStmt.setString(4, address);
+                    insertKHStmt.setInt(5, existingId);
+                    insertKHStmt.executeUpdate();
+                }
+
+                return existingId;
+            }
+        }
+
+        // Kiểm tra email đã tồn tại chưa (email UNIQUE)
+        String checkEmailQuery = "SELECT id FROM taikhoan WHERE email = ?";
+        try (PreparedStatement checkEmailStmt = conn.prepareStatement(checkEmailQuery)) {
+            checkEmailStmt.setString(1, email);
+            ResultSet emailRs = checkEmailStmt.executeQuery();
+            if (emailRs.next()) {
+                showAlert("Lỗi", "Email đã tồn tại. Vui lòng dùng email khác.");
+                return null;
+            }
+        }
+
+        // Hỏi người dùng có muốn tạo tài khoản mới không
+        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+        confirm.setTitle("Tạo tài khoản mới");
+        confirm.setHeaderText(null);
+        confirm.setContentText("Khách hàng này chưa có tài khoản. Tạo tài khoản mới?");
+        if (confirm.showAndWait().orElse(ButtonType.CANCEL) != ButtonType.OK) {
+            return null; // người dùng từ chối
+        }
+
+        // Tạo tài khoản mới
+        int accountId;
+        String insertAccountQuery = """
+        INSERT INTO taikhoan (username, mat_khau, vai_tro, loai_nguoi_dung, email, trang_thai, ngay_dang_ky)
+        VALUES (?, ?, 'khach', 'khachhang', ?, TRUE, NOW())
+    """;
+        try (PreparedStatement insertAccountStmt = conn.prepareStatement(insertAccountQuery, Statement.RETURN_GENERATED_KEYS)) {
+            insertAccountStmt.setString(1, phone); // username
+            insertAccountStmt.setString(2, phone); // password
+            insertAccountStmt.setString(3, email);
+            insertAccountStmt.executeUpdate();
+
+            ResultSet genKeys = insertAccountStmt.getGeneratedKeys();
+            if (genKeys.next()) {
+                accountId = genKeys.getInt(1);
+            } else {
+                throw new SQLException("Không thể lấy ID tài khoản vừa tạo.");
+            }
+        }
+
+        // Tạo khách hàng mới gắn với tài khoản
+        String insertCustomerQuery = """
+        INSERT INTO khachhang (ho_ten, email, sdt, dia_chi, id_taikhoan)
+        VALUES (?, ?, ?, ?, ?)
+    """;
+        try (PreparedStatement insertCustomerStmt = conn.prepareStatement(insertCustomerQuery)) {
+            insertCustomerStmt.setString(1, name);
+            insertCustomerStmt.setString(2, email);
+            insertCustomerStmt.setString(3, phone);
+            insertCustomerStmt.setString(4, address);
+            insertCustomerStmt.setInt(5, accountId);
+            insertCustomerStmt.executeUpdate();
+        }
+
+        return accountId;
+    }
+
 
     private void resetForm() {
         nameField.clear();
@@ -191,26 +310,43 @@ public class SalesController {
 
     @FXML
     public void handleSubmitOrder() {
-        if (cartItems.isEmpty() || nameField.getText().isEmpty()) {
+        // Kiểm tra dữ liệu đầu vào
+        if (cartItems.isEmpty() || nameField.getText().trim().isEmpty()) {
             showAlert("Lỗi", "Vui lòng nhập thông tin và thêm sách vào đơn.");
             return;
         }
 
+        String phone = phoneField.getText().trim();
+        String email = emailField.getText().trim();
+        String name = nameField.getText().trim();
+        String address = addressField.getText().trim();
+
         try (Connection conn = DatabaseConnection.getConnection()) {
             conn.setAutoCommit(false);
 
-            String insertOrder = "INSERT INTO donhang (ten_kh, sdt, email, dia_chi, tong_tien, nguoi_tao_id, ngay_tao, loai_don) VALUES (?, ?, ?, ?, ?, ?, NOW(), ?)";
+            // Tạo tài khoản và khách hàng nếu chưa có
+            Integer userId = createCustomerAccountIfNotExists(conn, phone, email, name, address);
+            if (userId == null) {
+                conn.rollback();
+                return;
+            }
+
+            // Tạo đơn hàng
+            String insertOrder = """
+            INSERT INTO donhang (ten_kh, sdt, email, dia_chi, tong_tien, nguoi_tao_id, ngay_tao, loai_don)
+            VALUES (?, ?, ?, ?, ?, ?, NOW(), ?)
+        """;
             String orderType = orderTypeCombo.getValue();
 
             try (PreparedStatement orderStmt = conn.prepareStatement(insertOrder, Statement.RETURN_GENERATED_KEYS)) {
                 double total = cartItems.stream().mapToDouble(OrderItem::getTotalPrice).sum();
 
-                orderStmt.setString(1, nameField.getText());
-                orderStmt.setString(2, phoneField.getText());
-                orderStmt.setString(3, emailField.getText());
-                orderStmt.setString(4, addressField.getText());
+                orderStmt.setString(1, name);
+                orderStmt.setString(2, phone);
+                orderStmt.setString(3, email);
+                orderStmt.setString(4, address);
                 orderStmt.setDouble(5, total);
-                orderStmt.setInt(6, LoginController.curentUserId);
+                orderStmt.setInt(6, userId); // dùng ID vừa tạo
                 orderStmt.setString(7, orderType);
 
                 orderStmt.executeUpdate();
@@ -224,6 +360,7 @@ public class SalesController {
 
                 int orderId = generatedKeys.getInt(1);
 
+                // Ghi chi tiết đơn hàng + cập nhật tồn kho
                 String insertItem = "INSERT INTO chitiet_donhang (ma_don, ma_sach, so_luong, don_gia) VALUES (?, ?, ?, ?)";
                 String updateStock = "UPDATE sach SET so_luong_ton = so_luong_ton - ? WHERE ma_sach = ?";
 
@@ -251,6 +388,7 @@ public class SalesController {
                     stockStmt.executeBatch();
                 }
 
+                // Commit và hiển thị kết quả
                 conn.commit();
                 showRecentOrder(orderId);
                 showAlert("Thành công", "Đơn hàng đã được lưu. Tổng tiền: " + total + " VNĐ");
@@ -270,6 +408,7 @@ public class SalesController {
             showAlert("Lỗi", "Không thể kết nối cơ sở dữ liệu: " + e.getMessage());
         }
     }
+
 
     private void showAlert(String title, String msg) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);

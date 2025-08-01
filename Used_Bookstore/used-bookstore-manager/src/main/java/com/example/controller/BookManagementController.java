@@ -43,7 +43,7 @@ public class BookManagementController {
         addActionButtons();
         handleDoubleClickRow();
 
-        if (!"admin".equalsIgnoreCase(com.example.controller.LoginController.curentUserRole)) {
+        if (!"admin".equalsIgnoreCase(com.example.controller.LoginController.currentUserRole)) {
             addBookBtn.setVisible(false);
             addBookBtn.setManaged(false);
         }
@@ -116,7 +116,7 @@ public class BookManagementController {
                 } else {
                     hbox.getChildren().clear();
                     hbox.getChildren().add(viewBtn);
-                    if ("admin".equalsIgnoreCase(LoginController.curentUserRole)) {
+                    if ("admin".equalsIgnoreCase(LoginController.currentUserRole)) {
                         hbox.getChildren().addAll(editBtn, deleteBtn);
                     }
                     setGraphic(hbox);

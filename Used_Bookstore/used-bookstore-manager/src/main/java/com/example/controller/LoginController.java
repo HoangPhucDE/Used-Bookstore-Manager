@@ -10,37 +10,29 @@ import javafx.scene.input.MouseEvent;
 import javafx.stage.Stage;
 
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 
 public class LoginController {
 
-    @FXML
-    private TextField usernameField;
+    @FXML private TextField usernameField;
+    @FXML private PasswordField passwordField;
+    @FXML private Button loginButton;
 
-    @FXML
-    private PasswordField passwordField;
-
-    @FXML
-    private Button loginButton;
-
-    public static int curentUserId; //Lưu id User login vào biến này
-    public static String curentUserRole;
-    public static String curentUserName;
+    // lưu thông tin người đăng nhập
+    public static int currentUserId;
+    public static String currentUserRole;
+    public static String currentUserName;
+    public static String currentUserFullname;
 
     @FXML
     private void handleLogin() {
-        String username = usernameField.getText();
-        String password = passwordField.getText();
+        String username = usernameField.getText().trim();
+        String password = passwordField.getText().trim();
 
         if (username.isEmpty() || password.isEmpty()) {
             showAlert("Lỗi", "Vui lòng nhập đầy đủ thông tin đăng nhập!");
             return;
         }
-
-        boolean loginSuccess = false;
 
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(
@@ -51,37 +43,56 @@ public class LoginController {
 
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
-                    loginSuccess = true;
-                    LoginController.curentUserId = rs.getInt("id"); //Load id user vào
-                    LoginController.curentUserRole = rs.getString("vai_tro"); //Load role user
-                    LoginController.curentUserName = rs.getString("username"); //Load username
+                    // Lưu thông tin user
+                    currentUserId = rs.getInt("id");
+                    currentUserRole = rs.getString("vai_tro");
+                    currentUserName = rs.getString("username");
+
+                    String sql = """
+                        SELECT ho_ten FROM nhanvien WHERE id_taikhoan = ?
+                        UNION
+                        SELECT ho_ten FROM khachhang WHERE id_taikhoan = ?
+                    """;
+                    try (PreparedStatement nameStmt = conn.prepareStatement(sql)) {
+                        nameStmt.setInt(1, currentUserId);
+                        nameStmt.setInt(2, currentUserId);
+                        try (ResultSet nameRs = nameStmt.executeQuery()) {
+                            if (nameRs.next()) {
+                                currentUserFullname = nameRs.getString("ho_ten");
+                            } else {
+                                currentUserFullname = "Người dùng";
+                            }
+                        }
+                    }
+
+                    openHomeView();
+
+                } else {
+                    showAlert("Lỗi", "Tên đăng nhập hoặc mật khẩu không đúng.");
                 }
             }
 
         } catch (SQLException e) {
             showAlert("Lỗi", "Lỗi kết nối CSDL: " + e.getMessage());
             e.printStackTrace();
-            return;
         }
+    }
 
-        if (loginSuccess) {
-            try {
-                FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/View/Home.fxml"));
-                Parent homeRoot = loader.load();
+    private void openHomeView() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/View/Home.fxml"));
+            Parent homeRoot = loader.load();
 
-                HomeController homeController = loader.getController();
-                homeController.setUser(curentUserName, curentUserRole);
+            HomeController homeController = loader.getController();
+            homeController.setUser(currentUserId, currentUserFullname, currentUserRole); // Truyền thông tin người đăng nhập
 
-                Scene homeScene = new Scene(homeRoot);
-                Stage currentStage = (Stage) loginButton.getScene().getWindow();
-                currentStage.setScene(homeScene);
-                currentStage.setTitle("Trang chủ");
-            } catch (IOException e) {
-                e.printStackTrace();
-                showAlert("Lỗi", "Không thể tải giao diện chính.");
-            }
-        } else {
-            showAlert("Lỗi", "Tên đăng nhập hoặc mật khẩu không đúng.");
+            Stage stage = (Stage) loginButton.getScene().getWindow();
+            stage.setScene(new Scene(homeRoot));
+            stage.setTitle("📚 Trang chủ");
+            stage.show();
+        } catch (IOException e) {
+            e.printStackTrace();
+            showAlert("Lỗi", "Không thể tải giao diện chính.");
         }
     }
 
@@ -127,12 +138,9 @@ public class LoginController {
                 + "-fx-border-radius: 8; -fx-background-radius: 8; -fx-padding: 12 15;"
                 + "-fx-font-size: 14px;";
 
-        usernameField.focusedProperty().addListener((obs, oldVal, now) -> {
-            usernameField.setStyle(now ? focusStyle : normalStyle);
-        });
-
-        passwordField.focusedProperty().addListener((obs, oldVal, now) -> {
-            passwordField.setStyle(now ? focusStyle : normalStyle);
-        });
+        usernameField.focusedProperty().addListener((obs, oldVal, now) ->
+                usernameField.setStyle(now ? focusStyle : normalStyle));
+        passwordField.focusedProperty().addListener((obs, oldVal, now) ->
+                passwordField.setStyle(now ? focusStyle : normalStyle));
     }
 }
