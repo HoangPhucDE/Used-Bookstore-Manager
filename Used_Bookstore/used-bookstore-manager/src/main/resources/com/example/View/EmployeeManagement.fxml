@@ -4,7 +4,8 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.geometry.Insets?>
 
-<BorderPane xmlns:fx="http://javafx.com/fxml"
+<BorderPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
             fx:controller="com.example.controller.EmployeeManagementController"
             style="-fx-background-color: #f9f9fb;">
 
@@ -13,31 +14,31 @@
         <HBox spacing="15" alignment="CENTER_LEFT"
               style="-fx-padding: 20 30; -fx-background-color: #ffffff;">
             <Label text="👥 Quản lý Nhân viên"
-                   style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;"/>
+                   style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;" />
         </HBox>
     </top>
 
     <!-- Center Table -->
     <center>
         <VBox spacing="15" style="-fx-padding: 20;">
-            <HBox spacing="10">
+            <!-- Search and Add -->
+            <HBox spacing="10" alignment="CENTER_LEFT">
                 <TextField fx:id="searchField" promptText="🔍 Tìm kiếm theo tên hoặc email"
-                           style="-fx-pref-width: 300; -fx-background-radius: 6;"/>
-                <Button text="Tìm kiếm" onAction="#searchEmployee"
-                        style="-fx-background-color: #3498db; -fx-text-fill: white;"/>
+                           style="-fx-pref-width: 300; -fx-background-radius: 6;" />
                 <Region HBox.hgrow="ALWAYS"/>
                 <Button text="+ Thêm nhân viên" onAction="#showAddEmployeeDialog"
-                        style="-fx-background-color: #2ecc71; -fx-text-fill: white;"/>
+                        style="-fx-background-color: #2ecc71; -fx-text-fill: white;" />
             </HBox>
 
+            <!-- Table -->
             <TableView fx:id="employeeTable" prefHeight="500">
                 <columns>
-                    <TableColumn fx:id="colId" text="ID" prefWidth="50"/>
-                    <TableColumn fx:id="colName" text="Họ tên" prefWidth="200"/>
-                    <TableColumn fx:id="colEmail" text="Email" prefWidth="200"/>
-                    <TableColumn fx:id="colPhone" text="SĐT" prefWidth="150"/>
-                    <TableColumn fx:id="colRole" text="Chức vụ" prefWidth="100"/>
-                    <TableColumn fx:id="colActions" text="Hành động" prefWidth="150"/>
+                    <TableColumn fx:id="colId" text="ID" prefWidth="50" />
+                    <TableColumn fx:id="colName" text="Họ tên" prefWidth="200" />
+                    <TableColumn fx:id="colEmail" text="Email" prefWidth="200" />
+                    <TableColumn fx:id="colPhone" text="SĐT" prefWidth="150" />
+                    <TableColumn fx:id="colRole" text="Chức vụ" prefWidth="100" />
+                    <TableColumn fx:id="colActions" text="Hành động" prefWidth="150" />
                 </columns>
             </TableView>
         </VBox>

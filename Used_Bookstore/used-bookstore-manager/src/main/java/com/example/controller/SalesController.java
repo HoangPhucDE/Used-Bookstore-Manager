@@ -1,4 +1,5 @@
 package com.example.controller;
+
 import com.example.DatabaseConnection;
 import com.example.model.Book;
 import com.example.model.OrderItem;
@@ -35,7 +36,8 @@ public class SalesController {
         loadBooksFromDatabase();
 
         orderTypeCombo.getItems().addAll("online", "offline", "trahang", "nhap_kho");
-        orderTypeCombo.getSelectionModel().selectFirst(); // Chọn mặc định
+        orderTypeCombo.getSelectionModel().selectFirst();
+
         colBookTitle.setCellValueFactory(new PropertyValueFactory<>("bookTitle"));
         colQuantity.setCellValueFactory(new PropertyValueFactory<>("quantity"));
         colUnitPrice.setCellValueFactory(new PropertyValueFactory<>("unitPrice"));
@@ -44,11 +46,10 @@ public class SalesController {
         orderTable.setItems(cartItems);
 
         phoneField.focusedProperty().addListener((obs, oldVal, newVal) -> {
-            if (!newVal) { // Khi người dùng rời khỏi ô số điện thoại
+            if (!newVal) {
                 autoFillCustomerInfo();
             }
         });
-
     }
 
     private void resetForm() {
@@ -62,11 +63,19 @@ public class SalesController {
     }
 
     private void loadBooksFromDatabase() {
-        String query = "SELECT ma_sach, ten_sach, tac_gia, the_loai, gia_ban, so_luong_ton, danh_gia FROM sach WHERE so_luong_ton > 0";
+        String query = """
+    SELECT ma_sach, ten_sach, tac_gia, the_loai, nxb, nam_xb,
+           gia_nhap, gia_ban, tinh_trang, so_luong_ton, danh_gia, hinh_anh
+    FROM sach
+    WHERE so_luong_ton > 0
+    """;
 
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(query);
              ResultSet rs = stmt.executeQuery()) {
+
+            allBooks.clear();
+            bookCombo.getItems().clear();
 
             while (rs.next()) {
                 Book book = new Book(
@@ -74,9 +83,14 @@ public class SalesController {
                         rs.getString("ten_sach"),
                         rs.getString("tac_gia"),
                         rs.getString("the_loai"),
-                        rs.getDouble("gia_ban"),
-                        rs.getInt("so_luong_ton"),
-                        rs.getDouble("danh_gia")
+                        rs.getString("nxb"),                // publisher
+                        rs.getInt("nam_xb"),                // year
+                        rs.getDouble("gia_nhap"),           // importPrice
+                        rs.getDouble("gia_ban"),            // salePrice
+                        rs.getString("tinh_trang"),         // condition
+                        rs.getInt("so_luong_ton"),          // stock
+                        rs.getDouble("danh_gia"),           // rating
+                        rs.getString("hinh_anh")            // imagePath
                 );
                 allBooks.add(book);
                 bookCombo.getItems().add(book.getTitle());
@@ -120,7 +134,7 @@ public class SalesController {
             return;
         }
 
-        cartItems.add(new OrderItem(bookTitle, quantity, selectedBook.getPrice()));
+        cartItems.add(new OrderItem(selectedBook.getId(), bookTitle, quantity, selectedBook.getPrice()));
         updateTotal();
         quantityField.clear();
     }
@@ -150,8 +164,7 @@ public class SalesController {
     }
 
     private void showRecentOrder(int orderId) {
-        String query = "SELECT ma_don, ten_kh, tong_tien, ngay_tao, loai_don " +
-                "FROM donhang WHERE ma_don = ?";
+        String query = "SELECT ma_don, ten_kh, tong_tien, ngay_tao, loai_don FROM donhang WHERE ma_don = ?";
 
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(query)) {
@@ -172,51 +185,9 @@ public class SalesController {
             }
 
         } catch (SQLException e) {
-            e.printStackTrace();
             showAlert("Lỗi", "Không thể hiển thị đơn hàng gần đây.");
         }
     }
-
-//    private void confirmAndInsertCustomerIfNotExists(String name, String phone, String email, String address) {
-//        String checkQuery = "SELECT id FROM khachhang WHERE sdt = ?";
-//        String insertQuery = "INSERT INTO khachhang (ho_ten, sdt, email, dia_chi) VALUES (?, ?, ?, ?)";
-//
-//        try (Connection conn = DatabaseConnection.getConnection();
-//             PreparedStatement checkStmt = conn.prepareStatement(checkQuery)) {
-//
-//            checkStmt.setString(1, phone);
-//            ResultSet rs = checkStmt.executeQuery();
-//
-//            if (!rs.next()) {
-//                Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-//                alert.setTitle("Thêm khách hàng mới");
-//                alert.setHeaderText("Số điện thoại chưa có trong hệ thống.");
-//                alert.setContentText("Bạn có muốn lưu thông tin khách hàng này không?");
-//                ButtonType yes = new ButtonType("Có", ButtonBar.ButtonData.YES);
-//                ButtonType no = new ButtonType("Không", ButtonBar.ButtonData.NO);
-//                alert.getButtonTypes().setAll(yes, no);
-//
-//                alert.showAndWait().ifPresent(result -> {
-//                    if (result == yes) {
-//                        try (PreparedStatement insertStmt = conn.prepareStatement(insertQuery)) {
-//                            insertStmt.setString(1, name);
-//                            insertStmt.setString(2, phone);
-//                            insertStmt.setString(3, email);
-//                            insertStmt.setString(4, address);
-//                            insertStmt.executeUpdate();
-//                            showAlert("Thành công", "Đã lưu thông tin khách hàng mới.");
-//                        } catch (SQLException ex) {
-//                            showAlert("Lỗi", "Không thể lưu khách hàng: " + ex.getMessage());
-//                        }
-//                    }
-//                });
-//            }
-//
-//        } catch (SQLException e) {
-//            showAlert("Lỗi", "Không thể kiểm tra khách hàng: " + e.getMessage());
-//        }
-//    }
-
 
     @FXML
     public void handleSubmitOrder() {
@@ -230,14 +201,9 @@ public class SalesController {
 
             String insertOrder = "INSERT INTO donhang (ten_kh, sdt, email, dia_chi, tong_tien, nguoi_tao_id, ngay_tao, loai_don) VALUES (?, ?, ?, ?, ?, ?, NOW(), ?)";
             String orderType = orderTypeCombo.getValue();
-            if (orderType == null || orderType.isEmpty()) {
-                showAlert("Lỗi", "Vui lòng chọn loại đơn hàng.");
-                return;
-            }
 
             try (PreparedStatement orderStmt = conn.prepareStatement(insertOrder, Statement.RETURN_GENERATED_KEYS)) {
                 double total = cartItems.stream().mapToDouble(OrderItem::getTotalPrice).sum();
-
 
                 orderStmt.setString(1, nameField.getText());
                 orderStmt.setString(2, phoneField.getText());
@@ -258,7 +224,6 @@ public class SalesController {
 
                 int orderId = generatedKeys.getInt(1);
 
-                // Thêm chi tiết đơn hàng
                 String insertItem = "INSERT INTO chitiet_donhang (ma_don, ma_sach, so_luong, don_gia) VALUES (?, ?, ?, ?)";
                 String updateStock = "UPDATE sach SET so_luong_ton = so_luong_ton - ? WHERE ma_sach = ?";
 
@@ -271,14 +236,12 @@ public class SalesController {
                                 .findFirst()
                                 .orElseThrow();
 
-                        // Thêm vào chi tiết đơn
                         itemStmt.setInt(1, orderId);
                         itemStmt.setInt(2, book.getId());
                         itemStmt.setInt(3, item.getQuantity());
                         itemStmt.setDouble(4, item.getUnitPrice());
                         itemStmt.addBatch();
 
-                        // Cập nhật tồn kho
                         stockStmt.setInt(1, item.getQuantity());
                         stockStmt.setInt(2, book.getId());
                         stockStmt.addBatch();
@@ -289,30 +252,14 @@ public class SalesController {
                 }
 
                 conn.commit();
-                showRecentOrder(orderId); // Hiển thị đơn hàng vừa tạo
-                // Xác nhận và thêm khách hàng nếu chưa tồn tại
-//                confirmAndInsertCustomerIfNotExists(
-//                        nameField.getText(),
-//                        phoneField.getText(),
-//                        emailField.getText(),
-//                        addressField.getText()
-//                );
-
+                showRecentOrder(orderId);
                 showAlert("Thành công", "Đơn hàng đã được lưu. Tổng tiền: " + total + " VNĐ");
                 cartItems.clear();
                 updateTotal();
                 resetForm();
                 bookCombo.getItems().clear();
                 allBooks.clear();
-                loadBooksFromDatabase(); // Load lại sách từ database
-
-                showAlert("Thành công", "Đơn hàng đã được lưu. Tổng tiền: " + total + " VNĐ");
-                cartItems.clear();
-                updateTotal();
-                resetForm();
-                bookCombo.getItems().clear();
-                allBooks.clear();
-                loadBooksFromDatabase(); // Load lại sách từ database
+                loadBooksFromDatabase();
 
             } catch (SQLException e) {
                 conn.rollback();
