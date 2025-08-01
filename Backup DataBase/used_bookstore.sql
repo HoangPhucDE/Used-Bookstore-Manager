@@ -9,7 +9,8 @@ CREATE TABLE taikhoan (
     vai_tro ENUM('admin', 'user', 'khach') NOT NULL,
     loai_nguoi_dung ENUM('nhanvien', 'khachhang') NOT NULL,
     email VARCHAR(100) NOT NULL UNIQUE,
-    trang_thai BOOLEAN NOT NULL DEFAULT TRUE
+    trang_thai BOOLEAN NOT NULL DEFAULT TRUE,
+    ngay_dang_ky DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
 -- 2. Bảng nhân viên
@@ -51,7 +52,6 @@ CREATE TABLE sach (
     danh_gia DOUBLE DEFAULT 0 CHECK (danh_gia BETWEEN 0 AND 5) 
 );
 
-
 -- 5. Bảng giỏ hàng
 CREATE TABLE giohang (
     ma_kh INT,
@@ -92,14 +92,14 @@ CREATE TABLE chitiet_donhang (
 USE Used_Bookstore;
 
 -- 1. Tài khoản
-INSERT INTO taikhoan (username, mat_khau, vai_tro, loai_nguoi_dung, email, trang_thai) VALUES
-('admin_quyen', '123456@Admin', 'admin', 'nhanvien', 'quyen.admin@example.com', TRUE),
-('leminh_nhanvien', '123456@Nv', 'user', 'nhanvien', 'leminh.tuan@example.com', TRUE),
-('trananh_1990', '123456@Khach', 'khach', 'khachhang', 'anhdung.tran@gmail.com', TRUE),
-('phamhoa_admin', 'hoa123@Admin', 'admin', 'nhanvien', 'phamhoa@example.com', TRUE),
-('phuocnv', 'phuoc123@Nv', 'user', 'nhanvien', 'phuoc.nv@example.com', TRUE),
-('vananh_khach', 'vananh123@Khach', 'khach', 'khachhang', 'vananh.kh@example.com', TRUE),
-('tuananh_khach', 'tuananh123@Khach', 'khach', 'khachhang', 'tuananh.kh@example.com', TRUE);
+INSERT INTO taikhoan (username, mat_khau, vai_tro, loai_nguoi_dung, email, trang_thai, ngay_dang_ky) VALUES
+('admin_quyen', '123456@Admin', 'admin', 'nhanvien', 'quyen.admin@example.com', TRUE, NOW()),
+('leminh_nhanvien', '123456@Nv', 'user', 'nhanvien', 'leminh.tuan@example.com', TRUE, NOW()),
+('trananh_1990', '123456@Khach', 'khach', 'khachhang', 'anhdung.tran@gmail.com', TRUE, NOW()),
+('phamhoa_admin', 'hoa123@Admin', 'admin', 'nhanvien', 'phamhoa@example.com', TRUE, NOW()),
+('phuocnv', 'phuoc123@Nv', 'user', 'nhanvien', 'phuoc.nv@example.com', TRUE, NOW()),
+('vananh_khach', 'vananh123@Khach', 'khach', 'khachhang', 'vananh.kh@example.com', TRUE, NOW()),
+('tuananh_khach', 'tuananh123@Khach', 'khach', 'khachhang', 'tuananh.kh@example.com', TRUE, NOW());
 
 -- 2. Nhân viên
 INSERT INTO nhanvien (ho_ten, ngay_sinh, sdt, chuc_vu, trang_thai, id_taikhoan) VALUES
