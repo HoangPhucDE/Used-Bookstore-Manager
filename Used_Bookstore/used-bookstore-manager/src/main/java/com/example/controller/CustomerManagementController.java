@@ -29,6 +29,9 @@ public class CustomerManagementController {
     private final CustomerDao customerDao = new CustomerDao();
     private final AccountDao accountDao = new AccountDao();
 
+    private Customer currentCustomer;
+    private int currentUserId = LoginController.currentUserId;
+
     @FXML
     public void initialize() {
         colId.setCellValueFactory(new PropertyValueFactory<>("maKh"));
@@ -40,6 +43,8 @@ public class CustomerManagementController {
 
         statusFilter.setItems(javafx.collections.FXCollections.observableArrayList("Tất cả", "Đang hoạt động", "Khóa"));
         statusFilter.getSelectionModel().selectFirst();
+
+        currentCustomer = customerDao.findCustomerByAccountId(currentUserId);
 
         loadDanhSachKhachHang("");
         setupActionButtons();
@@ -269,12 +274,18 @@ public class CustomerManagementController {
                 return;
             }
 
+            Customer updated = new Customer(
+                    kh.getMaKh(),
+                    hoTen,
+                    email,
+                    sdt,
+                    diaChi,
+                    trangThaiText,
+                    kh.getAccountId()
+            );
+
             try (Connection conn = DatabaseConnection.getConnection()) {
                 conn.setAutoCommit(false);
-
-                Customer updated = new Customer(
-                        kh.getMaKh(), hoTen, email, sdt, diaChi, trangThaiText
-                );
 
                 customerDao.updateCustomer(conn, updated);
 

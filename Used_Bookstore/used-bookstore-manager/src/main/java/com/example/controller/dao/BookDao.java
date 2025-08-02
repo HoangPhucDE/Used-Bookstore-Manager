@@ -50,6 +50,28 @@ public class BookDao {
         return books;
     }
 
+    public List<Book> getBooksByCategory(String category) {
+        List<Book> bookList = new ArrayList<>();
+        String sql = "SELECT * FROM sach WHERE the_loai = ? AND so_luong_ton > 0";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, category);
+            ResultSet rs = stmt.executeQuery();
+
+            while (rs.next()) {
+                bookList.add(mapResultSetToBook(rs)); // ← dùng phương thức ánh xạ đã có
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return bookList;
+    }
+
+
     /**
      * Lấy tất cả sách trong cơ sở dữ liệu
      */

@@ -47,27 +47,70 @@ public class CustomerDao {
      * Tìm thông tin khách hàng theo SĐT
      */
     public Customer findCustomerByPhone(String sdt) {
-        String sql = "SELECT ho_ten, email, dia_chi FROM khachhang WHERE sdt = ?";
+        String sql = "SELECT * FROM khachhang WHERE sdt = ?";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
+
             stmt.setString(1, sdt);
             ResultSet rs = stmt.executeQuery();
 
             if (rs.next()) {
-                return new Customer(
-                        0,
-                        rs.getString("ho_ten"),
-                        rs.getString("email"),
-                        sdt,
-                        rs.getString("dia_chi"),
-                        "đang hoạt động"
-                );
+                int maKh = rs.getInt("ma_kh");
+                String hoTen = rs.getString("ho_ten");
+                String email = rs.getString("email");
+                String diaChi = rs.getString("dia_chi");
+                boolean trangThaiBool = rs.getBoolean("trang_thai"); // CSDL kiểu BOOLEAN
+                String trangThai = trangThaiBool ? "Đang hoạt động" : "Khóa";
+                int accountId = rs.getInt("id_taikhoan");
+
+                return new Customer(maKh, hoTen, email, sdt, diaChi, trangThai, accountId);
             }
+
         } catch (SQLException e) {
             e.printStackTrace();
         }
+
         return null;
     }
+
+
+    public Customer findCustomerByAccountId(int accountId) {
+        String sql = """
+        SELECT kh.ma_kh, kh.ho_ten, kh.email, kh.sdt, kh.dia_chi, tk.trang_thai
+        FROM khachhang kh
+        JOIN taikhoan tk ON kh.id_taikhoan = tk.id
+        WHERE kh.id_taikhoan = ?
+    """;
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, accountId);
+            ResultSet rs = stmt.executeQuery();
+
+            if (rs.next()) {
+                boolean trangThaiBool = rs.getBoolean("trang_thai");
+                String trangThai = trangThaiBool ? "Đang hoạt động" : "Khóa";
+
+                return new Customer(
+                        rs.getInt("ma_kh"),
+                        rs.getString("ho_ten"),
+                        rs.getString("email"),
+                        rs.getString("sdt"),
+                        rs.getString("dia_chi"),
+                        trangThai,
+                        accountId
+                );
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return null;
+    }
+
+
 
     /**
      * Trả về danh sách khách hàng theo từ khoá và trạng thái
@@ -76,11 +119,11 @@ public class CustomerDao {
         ObservableList<Customer> list = FXCollections.observableArrayList();
 
         String sql = """
-            SELECT kh.ma_kh, kh.ho_ten, kh.email, kh.sdt, kh.dia_chi, tk.trang_thai
-            FROM khachhang kh
-            JOIN taikhoan tk ON kh.id_taikhoan = tk.id
-            WHERE (kh.ho_ten LIKE ? OR kh.email LIKE ? OR kh.sdt LIKE ?)
-        """;
+        SELECT kh.ma_kh, kh.ho_ten, kh.email, kh.sdt, kh.dia_chi, kh.id_taikhoan, tk.trang_thai
+        FROM khachhang kh
+        JOIN taikhoan tk ON kh.id_taikhoan = tk.id
+        WHERE (kh.ho_ten LIKE ? OR kh.email LIKE ? OR kh.sdt LIKE ?)
+    """;
 
         boolean filterStatus = statusFilter != null && !statusFilter.equals("Tất cả");
         if (filterStatus) {
@@ -104,13 +147,15 @@ public class CustomerDao {
             while (rs.next()) {
                 boolean status = rs.getBoolean("trang_thai");
                 String statusStr = status ? "Đang hoạt động" : "Khóa";
+
                 Customer kh = new Customer(
                         rs.getInt("ma_kh"),
                         rs.getString("ho_ten"),
                         rs.getString("email"),
                         rs.getString("sdt"),
                         rs.getString("dia_chi"),
-                        statusStr
+                        statusStr,
+                        rs.getInt("id_taikhoan") // ✅ thêm accountId vào đây
                 );
                 list.add(kh);
             }
@@ -118,8 +163,10 @@ public class CustomerDao {
         } catch (SQLException e) {
             e.printStackTrace();
         }
+
         return list;
     }
+
 
     public void updateCustomer(Connection conn, Customer customer) throws SQLException {
         String sql = """
