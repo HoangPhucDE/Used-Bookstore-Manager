@@ -33,14 +33,16 @@
             <!-- Table -->
             <TableView fx:id="employeeTable" prefHeight="500">
                 <columns>
-                    <TableColumn fx:id="colId" text="ID" prefWidth="50" />
+                    <TableColumn fx:id="colId" text="Mã nhân viên" prefWidth="100" />
                     <TableColumn fx:id="colName" text="Họ tên" prefWidth="200" />
-                    <TableColumn fx:id="colEmail" text="Email" prefWidth="200" />
+                    <TableColumn fx:id="colDob" text="Ngày sinh" prefWidth="120" />
                     <TableColumn fx:id="colPhone" text="SĐT" prefWidth="150" />
+                    <TableColumn fx:id="colEmail" text="Email" prefWidth="200" />
                     <TableColumn fx:id="colRole" text="Chức vụ" prefWidth="100" />
                     <TableColumn fx:id="colActions" text="Hành động" prefWidth="150" />
                 </columns>
             </TableView>
         </VBox>
     </center>
+
 </BorderPane>

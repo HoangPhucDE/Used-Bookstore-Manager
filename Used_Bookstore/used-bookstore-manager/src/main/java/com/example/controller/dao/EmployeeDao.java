@@ -12,23 +12,26 @@ public class EmployeeDao {
     public List<Employee> getAllEmployees() {
         List<Employee> list = new ArrayList<>();
         String query = """
-                SELECT ma_nv, ho_ten, sdt, chuc_vu, taikhoan.email 
-                FROM nhanvien
-                JOIN taikhoan ON taikhoan.id = nhanvien.id_taikhoan
-            """;
+        SELECT ma_nv, ho_ten, sdt, chuc_vu, taikhoan.email, ngay_sinh
+        FROM nhanvien
+        JOIN taikhoan ON taikhoan.id = nhanvien.id_taikhoan
+    """;
 
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(query);
              ResultSet rs = stmt.executeQuery()) {
 
             while (rs.next()) {
-                list.add(new Employee(
+                String dob = rs.getDate("ngay_sinh").toLocalDate().toString(); // định dạng yyyy-MM-dd
+                Employee emp = new Employee(
                         String.valueOf(rs.getInt("ma_nv")),
                         rs.getString("ho_ten"),
                         rs.getString("email"),
                         rs.getString("sdt"),
-                        rs.getString("chuc_vu")
-                ));
+                        rs.getString("chuc_vu"),
+                        dob
+                );
+                list.add(emp);
             }
 
         } catch (SQLException e) {
@@ -124,13 +127,18 @@ public class EmployeeDao {
     }
 
     public void updateEmployee(Employee emp) throws SQLException {
-        String updateEmp = "UPDATE nhanvien SET ho_ten=?, sdt=?, chuc_vu=? WHERE ma_nv=?";
+        String updateEmp = """
+        UPDATE nhanvien
+        SET ho_ten = ?, sdt = ?, chuc_vu = ?, ngay_sinh = ?
+        WHERE ma_nv = ?
+    """;
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(updateEmp)) {
             stmt.setString(1, emp.getName());
             stmt.setString(2, emp.getPhone());
             stmt.setString(3, emp.getRole());
-            stmt.setInt(4, Integer.parseInt(emp.getId()));
+            stmt.setDate(4, Date.valueOf(emp.getNgaySinh()));
+            stmt.setInt(5, Integer.parseInt(emp.getId()));
             stmt.executeUpdate();
         }
     }
