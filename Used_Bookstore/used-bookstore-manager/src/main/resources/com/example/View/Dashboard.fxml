@@ -10,7 +10,7 @@
             fx:controller="com.example.controller.DashboardController"
             fitToWidth="true"
             style="-fx-background-color: #f7f8fa;">
-    
+
     <VBox spacing="30" style="-fx-padding: 30;" alignment="TOP_CENTER">
 
         <!-- 🔷 Tiêu đề Tổng quan -->
