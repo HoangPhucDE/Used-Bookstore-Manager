@@ -13,29 +13,26 @@
         <HBox spacing="15" alignment="CENTER_LEFT"
               style="-fx-padding: 25 30; -fx-background-color: white; -fx-border-color: #e0e0e0; -fx-border-width: 0 0 1 0;">
             <Label text="🛒 Bán sách"
-                   style="-fx-font-size: 26px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;" />
+                   style="-fx-font-size: 26px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;"/>
         </HBox>
     </top>
 
-    <!-- Center Content -->
+    <!-- Main Content -->
     <center>
         <VBox spacing="25" style="-fx-padding: 30;">
 
             <!-- Book Selection -->
             <HBox spacing="15" alignment="CENTER_LEFT">
                 <Label text="Sách:" style="-fx-font-size: 14px;"/>
-                <ComboBox fx:id="bookCombo" prefWidth="220" promptText="Chọn sách"
-                          style="-fx-background-radius: 6; -fx-border-radius: 6;"/>
+                <ComboBox fx:id="bookCombo" prefWidth="220" promptText="Chọn sách"/>
                 <Label text="Số lượng:" style="-fx-font-size: 14px;"/>
-                <TextField fx:id="quantityField" prefWidth="70"
-                           style="-fx-background-radius: 6; -fx-border-radius: 6;"/>
+                <TextField fx:id="quantityField" prefWidth="70"/>
                 <Button text="➕ Thêm" onAction="#handleAddItem"
-                        style="-fx-background-color: #16a085; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 6;"/>
+                        style="-fx-background-color: #16a085; -fx-text-fill: white; -fx-font-weight: bold;"/>
             </HBox>
 
             <!-- Cart Table -->
-            <TableView fx:id="orderTable" prefHeight="250"
-                       style="-fx-background-radius: 8; -fx-border-color: #dcdde1; -fx-border-radius: 8;">
+            <TableView fx:id="orderTable" prefHeight="250">
                 <columns>
                     <TableColumn fx:id="colBookTitle" text="Tên sách" prefWidth="220"/>
                     <TableColumn fx:id="colQuantity" text="Số lượng" prefWidth="100"/>
@@ -44,12 +41,12 @@
                 </columns>
             </TableView>
 
-            <!-- Delete Item Button -->
+            <!-- Delete Button -->
             <Button fx:id="deleteItemButton" text="🗑️ Xóa sách" onAction="#handleDeleteItem"
-                    style="-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 6;"/>
+                    style="-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-weight: bold;"/>
 
             <!-- Customer Info -->
-            <VBox spacing="12" style="-fx-background-color: white; -fx-padding: 20; -fx-border-radius: 8; -fx-background-radius: 8; -fx-border-color: #e0e0e0;">
+            <VBox spacing="12" style="-fx-background-color: white; -fx-padding: 20; -fx-border-radius: 8; -fx-border-color: #e0e0e0;">
                 <GridPane hgap="10" vgap="10">
                     <columnConstraints>
                         <ColumnConstraints minWidth="130"/>
@@ -71,18 +68,32 @@
 
                     <Label text="📦 Loại đơn:" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
                     <ComboBox fx:id="orderTypeCombo" promptText="Chọn loại đơn"
-                              prefWidth="200" GridPane.rowIndex="4" GridPane.columnIndex="1"/>
+                              GridPane.rowIndex="4" GridPane.columnIndex="1"/>
+
+                    <Label text="🔐 Tạo tài khoản?" GridPane.rowIndex="5" GridPane.columnIndex="0"/>
+                    <CheckBox fx:id="createAccountCheckbox" text="Tạo tài khoản cho khách"
+                              GridPane.rowIndex="5" GridPane.columnIndex="1"/>
                 </GridPane>
+
+                <!-- Account Info (ẩn/hiện khi tạo tài khoản) -->
+                <VBox fx:id="accountBox" spacing="10" visible="false" managed="false" style="-fx-padding: 10 0 0 0;">
+                    <Label text="👤 Tên đăng nhập:"/>
+                    <TextField fx:id="usernameField"/>
+
+                    <Label text="🔒 Mật khẩu:"/>
+                    <PasswordField fx:id="passwordField"/>
+                </VBox>
             </VBox>
 
-            <!-- Total + Submit -->
+            <!-- Tổng tiền & xác nhận -->
             <HBox spacing="15" alignment="CENTER_LEFT">
                 <Label text="💰 Tổng tiền:" style="-fx-font-size: 16px;"/>
                 <Label fx:id="totalLabel" text="0 VNĐ"
                        style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #2980b9;"/>
                 <Region HBox.hgrow="ALWAYS"/>
+                <CheckBox fx:id="printInvoiceCheckbox" text="📄 Xuất hóa đơn sau khi đặt đơn" selected="true"/>
                 <Button text="💾 Xác nhận đơn hàng" onAction="#handleSubmitOrder"
-                        style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 8; -fx-padding: 10 20;"/>
+                        style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-weight: bold;"/>
             </HBox>
         </VBox>
     </center>
