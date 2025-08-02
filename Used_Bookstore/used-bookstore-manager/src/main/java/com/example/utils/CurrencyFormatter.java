@@ -1,4 +1,3 @@
-// com/example/utils/CurrencyFormatter.java
 package com.example.utils;
 
 import java.text.NumberFormat;
@@ -6,15 +5,16 @@ import java.util.Locale;
 
 public class CurrencyFormatter {
 
-    // Format tiền từ kiểu int
+    private static final NumberFormat formatter =
+            NumberFormat.getInstance(new Locale("vi", "VN"));
+
+    // Format tiền từ int
     public static String format(int amount) {
-        NumberFormat nf = NumberFormat.getInstance(new Locale("vi", "VN"));
-        return nf.format(amount) + " VNĐ";
+        return formatter.format(amount) + " VNĐ";
     }
 
-    // Format tiền từ kiểu double
+    // Format tiền từ double
     public static String format(double amount) {
-        NumberFormat nf = NumberFormat.getInstance(new Locale("vi", "VN"));
-        return nf.format(amount) + " VNĐ";
+        return formatter.format(amount) + " VNĐ";
     }
 }

@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class OrderItemDao {
+
     public List<OrderItem> getOrderItemsByOrderId(int orderId) {
         List<OrderItem> items = new ArrayList<>();
         String sql = """
