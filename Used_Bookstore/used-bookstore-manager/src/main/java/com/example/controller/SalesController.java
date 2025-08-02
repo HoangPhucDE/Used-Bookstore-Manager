@@ -33,6 +33,7 @@ public class SalesController {
 
     @FXML
     public void initialize() {
+
         loadBooksFromDatabase();
 
         orderTypeCombo.getItems().addAll("online", "offline", "trahang", "nhap_kho");
@@ -419,8 +420,38 @@ public class SalesController {
     }
 
     private void autoFillCustomerInfo() {
-        String sdt = phoneField.getText().trim();
-        if (sdt.isEmpty()) return;
+
+        String sdt = null;
+
+        try {
+            String sdtCheck = phoneField.getText().trim();
+
+            if (!sdtCheck.matches("\\d+")) {
+                throw new NumberFormatException("Số điện thoại chỉ được chứa số.");
+            }
+
+            if (sdtCheck.isEmpty()) {
+                Alert alert = new Alert((Alert.AlertType.ERROR));
+                alert.setTitle("Lỗi nhập liệu");
+                alert.setHeaderText("Số điện thoại không hợp lệ");
+                alert.setContentText("Số điện thoại không được để trống");
+                alert.showAndWait();
+            }
+
+            if (!sdt.matches("\\d{10}")) {
+                throw new NumberFormatException("Số điện thoại phải gồm đúng 10 chữ số.");
+            }
+
+            sdt = sdtCheck;
+
+        } catch (NumberFormatException ex) {
+            // Hiển thị cảnh báo
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Lỗi nhập liệu");
+            alert.setHeaderText("Số điện thoại không hợp lệ");
+            alert.setContentText("Vui lòng chỉ nhập số, không chứa ký tự chữ hoặc đặc biệt.");
+            alert.showAndWait();
+        }
 
         String query = "SELECT ten_kh, email, dia_chi FROM donhang WHERE sdt = ? ORDER BY ngay_tao DESC LIMIT 1";
 
