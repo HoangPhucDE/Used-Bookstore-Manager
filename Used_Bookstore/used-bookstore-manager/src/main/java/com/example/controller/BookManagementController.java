@@ -1,6 +1,6 @@
 package com.example.controller;
 
-import com.example.DatabaseConnection;
+import com.example.controller.dao.BookDao;
 import com.example.model.Book;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -18,43 +18,32 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
-import java.sql.*;
+import java.util.Optional;
 
 public class BookManagementController {
 
-    @FXML
-    private TextField searchField;
-    @FXML
-    private TableView<Book> bookTable;
-    @FXML
-    private TableColumn<Book, Integer> colId;
-    @FXML
-    private TableColumn<Book, String> colTitle;
-    @FXML
-    private TableColumn<Book, String> colAuthor;
-    @FXML
-    private TableColumn<Book, String> colCategory;
-    @FXML
-    private TableColumn<Book, Double> colImportPrice; // ✅ Giá nhập
-    @FXML
-    private TableColumn<Book, Double> colPrice;
-    @FXML
-    private TableColumn<Book, Integer> colStock;
-    @FXML
-    private TableColumn<Book, Double> colRating;
-    @FXML
-    private TableColumn<Book, Void> colActions;
-    @FXML
-    private Button addBookBtn;
+    @FXML private TextField searchField;
+    @FXML private TableView<Book> bookTable;
+    @FXML private TableColumn<Book, Integer> colId;
+    @FXML private TableColumn<Book, String> colTitle;
+    @FXML private TableColumn<Book, String> colAuthor;
+    @FXML private TableColumn<Book, String> colCategory;
+    @FXML private TableColumn<Book, Double> colImportPrice;
+    @FXML private TableColumn<Book, Double> colPrice;
+    @FXML private TableColumn<Book, Integer> colStock;
+    @FXML private TableColumn<Book, Double> colRating;
+    @FXML private TableColumn<Book, Void> colActions;
+    @FXML private Button addBookBtn;
 
+    private final BookDao bookDao = new BookDao();
     private final ObservableList<Book> bookList = FXCollections.observableArrayList();
 
     @FXML
     public void initialize() {
         setupColumns();
-        loadBooksFromDatabase();
-        addActionButtons();
-        handleDoubleClickRow();
+        loadBooks();
+        setupSearch();
+        setupActions();
 
         if (!"admin".equalsIgnoreCase(LoginController.currentUserRole)) {
             addBookBtn.setVisible(false);
@@ -67,39 +56,49 @@ public class BookManagementController {
         colTitle.setCellValueFactory(new PropertyValueFactory<>("title"));
         colAuthor.setCellValueFactory(new PropertyValueFactory<>("author"));
         colCategory.setCellValueFactory(new PropertyValueFactory<>("category"));
-        colImportPrice.setCellValueFactory(new PropertyValueFactory<>("importPrice")); // ✅
+        colImportPrice.setCellValueFactory(new PropertyValueFactory<>("importPrice"));
         colPrice.setCellValueFactory(new PropertyValueFactory<>("price"));
         colStock.setCellValueFactory(new PropertyValueFactory<>("stock"));
         colRating.setCellValueFactory(new PropertyValueFactory<>("rating"));
     }
 
-    private void loadBooksFromDatabase() {
-        bookList.clear();
-        try (Connection conn = DatabaseConnection.getConnection();
-                ResultSet rs = conn.createStatement().executeQuery("SELECT * FROM sach")) {
-
-            while (rs.next()) {
-                bookList.add(new Book(
-                        rs.getInt("ma_sach"),
-                        rs.getString("ten_sach"),
-                        rs.getString("tac_gia"),
-                        rs.getString("the_loai"),
-                        rs.getString("nxb"),
-                        rs.getInt("nam_xb"),
-                        rs.getDouble("gia_nhap"),
-                        rs.getDouble("gia_ban"),
-                        rs.getString("tinh_trang"),
-                        rs.getInt("so_luong_ton"),
-                        rs.getDouble("danh_gia"),
-                        rs.getString("hinh_anh")));
-            }
-        } catch (SQLException e) {
-            showAlert("Lỗi", "Không thể tải dữ liệu sách: " + e.getMessage());
-        }
+    private void loadBooks() {
+        bookList.setAll(bookDao.getAllBooks());
         bookTable.setItems(bookList);
+        bookTable.refresh();
     }
 
-    private void addActionButtons() {
+    private void setupSearch() {
+        searchField.textProperty().addListener((obs, oldVal, newVal) -> searchBook());
+    }
+
+    @FXML
+    private void searchBook() {
+        String keyword = toUnaccented(searchField.getText().trim());
+        if (keyword.isEmpty()) {
+            bookTable.setItems(bookList);
+            bookTable.refresh(); // để khôi phục lại các nút xem/sửa/xóa
+            return;
+        }
+
+        ObservableList<Book> filtered = FXCollections.observableArrayList();
+        for (Book b : bookList) {
+            if (
+                    toUnaccented(b.getTitle()).contains(keyword) ||
+                            toUnaccented(b.getAuthor()).contains(keyword) ||
+                            toUnaccented(b.getCategory()).contains(keyword) ||
+                            String.valueOf(b.getPrice()).contains(keyword) ||
+                            String.valueOf(b.getImportPrice()).contains(keyword)
+            ) {
+                filtered.add(b);
+            }
+        }
+
+        bookTable.setItems(filtered);
+        bookTable.refresh(); // để giữ lại nút hành động
+    }
+
+    private void setupActions() {
         colActions.setCellFactory(col -> new TableCell<>() {
             private final Button viewBtn = new Button("👁");
             private final Button editBtn = new Button("✏");
@@ -107,17 +106,17 @@ public class BookManagementController {
             private final HBox hbox = new HBox(5, viewBtn, editBtn, deleteBtn);
 
             {
-                viewBtn.setStyle("-fx-background-color: #3498db; -fx-text-fill: white;");
-                editBtn.setStyle("-fx-background-color: #f39c12; -fx-text-fill: white;");
-                deleteBtn.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white;");
-
                 viewBtn.setOnAction(e -> showBookDetails(getTableView().getItems().get(getIndex())));
-                editBtn.setOnAction(e -> showBookDialog(getTableView().getItems().get(getIndex())));
+                editBtn.setOnAction(e -> {
+                    if (isAdmin()) showBookDialog(getTableView().getItems().get(getIndex()));
+                });
                 deleteBtn.setOnAction(e -> {
-                    Book book = getTableView().getItems().get(getIndex());
-                    if (confirmDelete(book.getTitle())) {
-                        deleteBookFromDB(book.getId());
-                        bookTable.getItems().remove(book);
+                    if (isAdmin()) {
+                        Book b = getTableView().getItems().get(getIndex());
+                        if (confirmDelete(b.getTitle())) {
+                            bookDao.deleteBook(b.getId());
+                            loadBooks();
+                        }
                     }
                 });
             }
@@ -128,9 +127,7 @@ public class BookManagementController {
                 setGraphic(empty ? null : hbox);
             }
         });
-    }
 
-    private void handleDoubleClickRow() {
         bookTable.setRowFactory(tv -> {
             TableRow<Book> row = new TableRow<>();
             row.setOnMouseClicked(event -> {
@@ -142,21 +139,8 @@ public class BookManagementController {
         });
     }
 
-    @FXML
-    private void searchBook() {
-        String keyword = searchField.getText().toLowerCase().trim();
-        if (keyword.isEmpty()) {
-            bookTable.setItems(bookList);
-            return;
-        }
-
-        ObservableList<Book> filtered = FXCollections.observableArrayList();
-        for (Book b : bookList) {
-            if (b.getTitle().toLowerCase().contains(keyword) || b.getAuthor().toLowerCase().contains(keyword)) {
-                filtered.add(b);
-            }
-        }
-        bookTable.setItems(filtered);
+    private boolean isAdmin() {
+        return "admin".equalsIgnoreCase(LoginController.currentUserRole);
     }
 
     @FXML
@@ -172,7 +156,7 @@ public class BookManagementController {
         TextField title = new TextField();
         TextField author = new TextField();
         TextField category = new TextField();
-        TextField importPrice = new TextField(); // ✅
+        TextField importPrice = new TextField();
         TextField price = new TextField();
         TextField stock = new TextField();
         TextField rating = new TextField();
@@ -218,7 +202,7 @@ public class BookManagementController {
         grid.addRow(0, new Label("Tên sách:"), title);
         grid.addRow(1, new Label("Tác giả:"), author);
         grid.addRow(2, new Label("Thể loại:"), category);
-        grid.addRow(3, new Label("Giá nhập:"), importPrice); // ✅
+        grid.addRow(3, new Label("Giá nhập:"), importPrice);
         grid.addRow(4, new Label("Giá bán:"), price);
         grid.addRow(5, new Label("Tồn kho:"), stock);
         grid.addRow(6, new Label("Đánh giá:"), rating);
@@ -227,55 +211,75 @@ public class BookManagementController {
 
         dialog.getDialogPane().setContent(grid);
 
-        dialog.setResultConverter(btn -> {
-            if (btn == ButtonType.OK) {
-                try {
-                    if (title.getText().isBlank() || author.getText().isBlank())
-                        throw new Exception("Không được để trống tên hoặc tác giả");
+        // Nút OK: kiểm tra + xác nhận lưu
+        Button okBtn = (Button) dialog.getDialogPane().lookupButton(ButtonType.OK);
+        okBtn.addEventFilter(javafx.event.ActionEvent.ACTION, event -> {
+            try {
+                if (title.getText().isBlank() || author.getText().isBlank())
+                    throw new Exception("Tên sách và tác giả không được để trống.");
 
-                    double giaNhap = Double.parseDouble(importPrice.getText());
-                    double giaBan = Double.parseDouble(price.getText());
-                    int tonKho = Integer.parseInt(stock.getText());
-                    double dg = Double.parseDouble(rating.getText());
+                double giaNhap = Double.parseDouble(importPrice.getText());
+                double giaBan = Double.parseDouble(price.getText());
+                int tonKho = Integer.parseInt(stock.getText());
+                double dg = Double.parseDouble(rating.getText());
 
-                    if (giaNhap <= 0 || giaBan <= 0)
-                        throw new Exception("Giá nhập và bán phải lớn hơn 0");
-                    if (giaNhap > giaBan)
-                        throw new Exception("Giá nhập không được lớn hơn giá bán");
-                    if (tonKho < 0)
-                        throw new Exception("Tồn kho không hợp lệ");
-                    if (dg < 0 || dg > 5)
-                        throw new Exception("Đánh giá phải từ 0 đến 5");
+                if (giaNhap <= 0 || giaBan <= 0)
+                    throw new Exception("Giá nhập và giá bán phải lớn hơn 0.");
+                if (giaNhap > giaBan)
+                    throw new Exception("Giá nhập không được lớn hơn giá bán.");
+                if (tonKho < 0)
+                    throw new Exception("Số lượng tồn kho không hợp lệ.");
+                if (dg < 0 || dg > 5)
+                    throw new Exception("Đánh giá phải nằm trong khoảng từ 0 đến 5.");
 
-                    return new Book(
-                            bookToEdit != null ? bookToEdit.getId() : 0,
-                            title.getText(), author.getText(), category.getText(),
-                            "", 0, giaNhap, giaBan, "", tonKho, dg, imgPath[0]);
-                } catch (Exception ex) {
-                    String message;
-                    if (ex instanceof NumberFormatException) {
-                        message = "Số lượng phải là số nguyên!";
-                    } else if (ex instanceof NullPointerException) {
-                        message = "Thiếu dữ liệu bắt buộc!";
-                    } else {
-                        message = "Đã xảy ra lỗi: " + ex.getMessage();
-                    }
-                    showAlert("Lỗi nhập liệu", message);
-                    return null;
+                // xác nhận lưu
+                Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+                confirm.setTitle("Xác nhận lưu");
+                confirm.setHeaderText("Bạn có chắc chắn muốn lưu sách \"" + title.getText().trim() + "\"?");
+                confirm.setContentText("Thông tin sẽ được cập nhật vào hệ thống.");
+                Optional<ButtonType> result = confirm.showAndWait();
+                if (result.isEmpty() || result.get() != ButtonType.OK) {
+                    event.consume(); // Không lưu nếu không xác nhận
+                    return;
                 }
 
+                Book book = new Book(
+                        bookToEdit != null ? bookToEdit.getId() : 0,
+                        title.getText(), author.getText(), category.getText(),
+                        "", 0, giaNhap, giaBan, "", tonKho, dg, imgPath[0]);
+
+                if (bookToEdit == null)
+                    bookDao.insertBook(book);
+                else
+                    bookDao.updateBook(book);
+
+                loadBooks();
+
+            } catch (NumberFormatException ex) {
+                event.consume();
+                showAlert("Lỗi định dạng", "Vui lòng nhập đúng định dạng số cho giá, tồn kho và đánh giá.");
+            } catch (Exception ex) {
+                event.consume();
+                showAlert("Lỗi nhập liệu", ex.getMessage());
             }
-            return null;
         });
 
-        dialog.showAndWait().ifPresent(book -> {
-            if (bookToEdit == null)
-                insertBookToDB(book);
-            else
-                updateBookInDB(book);
-            loadBooksFromDatabase();
+        // Nút Cancel: xác nhận huỷ
+        Button cancelBtn = (Button) dialog.getDialogPane().lookupButton(ButtonType.CANCEL);
+        cancelBtn.addEventFilter(javafx.event.ActionEvent.ACTION, event -> {
+            Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+            confirm.setTitle("Xác nhận huỷ");
+            confirm.setHeaderText("Bạn có chắc chắn muốn huỷ bỏ thao tác không?");
+            confirm.setContentText("Mọi thay đổi sẽ không được lưu.");
+            Optional<ButtonType> result = confirm.showAndWait();
+            if (result.isEmpty() || result.get() != ButtonType.OK) {
+                event.consume(); // Không huỷ nếu không xác nhận
+            }
         });
+
+        dialog.showAndWait();
     }
+
 
     private void showBookDetails(Book book) {
         Dialog<Void> dialog = new Dialog<>();
@@ -297,7 +301,7 @@ public class BookManagementController {
         grid.addRow(0, new Label("Tên sách:"), new Label(book.getTitle()));
         grid.addRow(1, new Label("Tác giả:"), new Label(book.getAuthor()));
         grid.addRow(2, new Label("Thể loại:"), new Label(book.getCategory()));
-        grid.addRow(3, new Label("Giá nhập:"), new Label(book.getImportPrice() + " đ")); // ✅
+        grid.addRow(3, new Label("Giá nhập:"), new Label(book.getImportPrice() + " đ"));
         grid.addRow(4, new Label("Giá bán:"), new Label(book.getPrice() + " đ"));
         grid.addRow(5, new Label("Tồn kho:"), new Label(String.valueOf(book.getStock())));
         grid.addRow(6, new Label("Đánh giá:"), new Label(book.getRating() + "★"));
@@ -307,51 +311,20 @@ public class BookManagementController {
         dialog.showAndWait();
     }
 
-    private void insertBookToDB(Book b) {
-        String sql = "INSERT INTO sach (ten_sach, tac_gia, the_loai, gia_nhap, gia_ban, so_luong_ton, danh_gia, hinh_anh) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
-        try (Connection conn = DatabaseConnection.getConnection();
-                PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, b.getTitle());
-            stmt.setString(2, b.getAuthor());
-            stmt.setString(3, b.getCategory());
-            stmt.setDouble(4, b.getImportPrice());
-            stmt.setDouble(5, b.getPrice());
-            stmt.setInt(6, b.getStock());
-            stmt.setDouble(7, b.getRating());
-            stmt.setString(8, b.getImagePath());
-            stmt.executeUpdate();
-        } catch (SQLException e) {
-            showAlert("Lỗi", "Không thể thêm sách: " + e.getMessage());
-        }
+    private String toUnaccented(String input) {
+        return java.text.Normalizer.normalize(input, java.text.Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "") // bỏ dấu
+                .replaceAll("đ", "d").replaceAll("Đ", "D") // xử lý đ/Đ
+                .toLowerCase();
     }
 
-    private void updateBookInDB(Book b) {
-        String sql = "UPDATE sach SET ten_sach=?, tac_gia=?, the_loai=?, gia_nhap=?, gia_ban=?, so_luong_ton=?, danh_gia=?, hinh_anh=? WHERE ma_sach=?";
-        try (Connection conn = DatabaseConnection.getConnection();
-                PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, b.getTitle());
-            stmt.setString(2, b.getAuthor());
-            stmt.setString(3, b.getCategory());
-            stmt.setDouble(4, b.getImportPrice());
-            stmt.setDouble(5, b.getPrice());
-            stmt.setInt(6, b.getStock());
-            stmt.setDouble(7, b.getRating());
-            stmt.setString(8, b.getImagePath());
-            stmt.setInt(9, b.getId());
-            stmt.executeUpdate();
-        } catch (SQLException e) {
-            showAlert("Lỗi", "Không thể cập nhật sách: " + e.getMessage());
-        }
-    }
-
-    private void deleteBookFromDB(int id) {
-        try (Connection conn = DatabaseConnection.getConnection();
-                PreparedStatement stmt = conn.prepareStatement("DELETE FROM sach WHERE ma_sach = ?")) {
-            stmt.setInt(1, id);
-            stmt.executeUpdate();
-        } catch (SQLException e) {
-            showAlert("Lỗi", "Không thể xóa sách: " + e.getMessage());
-        }
+    private boolean confirmCancelDialog() {
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("Xác nhận huỷ");
+        alert.setHeaderText("Bạn có chắc chắn muốn huỷ bỏ thao tác không?");
+        alert.setContentText("Mọi thay đổi sẽ không được lưu.");
+        Optional<ButtonType> result = alert.showAndWait();
+        return result.isPresent() && result.get() == ButtonType.OK;
     }
 
     private boolean confirmDelete(String title) {
