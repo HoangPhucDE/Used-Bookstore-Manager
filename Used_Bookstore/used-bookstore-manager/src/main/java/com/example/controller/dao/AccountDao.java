@@ -38,7 +38,7 @@ public class AccountDao {
         return false;
     }
 
-    // ✅ Tạo tài khoản mới — dùng `Connection conn` truyền từ ngoài
+    // Tạo tài khoản mới
     public int createNewCustomerAccount(Connection conn, String username, String password, String email) throws SQLException {
         String sql = """
             INSERT INTO taikhoan (username, mat_khau, vai_tro, loai_nguoi_dung, email, trang_thai, ngay_dang_ky)

@@ -26,7 +26,7 @@ public class CustomerDao {
     }
 
     /**
-     * ✅ Thêm khách hàng mới gắn với tài khoản (dùng Connection bên ngoài)
+     * Thêm khách hàng mới gắn với tài khoản
      */
     public void insertCustomer(Connection conn, String name, String email, String phone, String address, int accountId) throws SQLException {
         String sql = """
@@ -44,7 +44,7 @@ public class CustomerDao {
     }
 
     /**
-     * ✅ Tìm thông tin khách hàng theo SĐT
+     * Tìm thông tin khách hàng theo SĐT
      */
     public Customer findCustomerByPhone(String sdt) {
         String sql = "SELECT ho_ten, email, dia_chi FROM khachhang WHERE sdt = ?";
@@ -70,7 +70,7 @@ public class CustomerDao {
     }
 
     /**
-     * ✅ Trả về danh sách khách hàng theo từ khoá và trạng thái
+     * Trả về danh sách khách hàng theo từ khoá và trạng thái
      */
     public ObservableList<Customer> findAll(String keyword, String statusFilter) {
         ObservableList<Customer> list = FXCollections.observableArrayList();
