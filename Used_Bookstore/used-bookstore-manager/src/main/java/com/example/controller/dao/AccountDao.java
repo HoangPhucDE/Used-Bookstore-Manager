@@ -57,4 +57,13 @@ public class AccountDao {
             }
         }
     }
+
+    public void updateAccountStatus(Connection conn, int accountId, boolean status) throws SQLException {
+        String sql = "UPDATE taikhoan SET trang_thai = ? WHERE id = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setBoolean(1, status);
+            stmt.setInt(2, accountId);
+            stmt.executeUpdate();
+        }
+    }
 }
