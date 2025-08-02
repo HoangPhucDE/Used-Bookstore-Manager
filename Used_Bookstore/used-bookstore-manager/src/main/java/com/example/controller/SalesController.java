@@ -1,4 +1,5 @@
 package com.example.controller;
+import javafx.beans.property.ReadOnlyStringWrapper;
 
 import com.example.controller.dao.AccountDao;
 import com.example.controller.dao.BookDao;
@@ -35,8 +36,8 @@ public class SalesController {
     @FXML private TableView<OrderItem> orderTable;
     @FXML private TableColumn<OrderItem, String> colBookTitle;
     @FXML private TableColumn<OrderItem, Integer> colQuantity;
-    @FXML private TableColumn<OrderItem, Double> colUnitPrice;
-    @FXML private TableColumn<OrderItem, Double> colTotalPrice;
+    @FXML private TableColumn<OrderItem, String> colUnitPrice;
+    @FXML private TableColumn<OrderItem, String> colTotalPrice;
 
     @FXML private TextField nameField, phoneField, emailField, addressField;
     @FXML private TextField usernameField, passwordField;
@@ -60,8 +61,6 @@ public class SalesController {
 
         colBookTitle.setCellValueFactory(new PropertyValueFactory<>("bookTitle"));
         colQuantity.setCellValueFactory(new PropertyValueFactory<>("quantity"));
-        colUnitPrice.setCellValueFactory(new PropertyValueFactory<>("unitPrice"));
-        colTotalPrice.setCellValueFactory(new PropertyValueFactory<>("totalPrice"));
 
         orderTable.setItems(cartItems);
 
@@ -93,6 +92,12 @@ public class SalesController {
             passwordField.setVisible(newVal);
             passwordField.setManaged(newVal);
         });
+
+        colUnitPrice.setCellValueFactory(cellData ->
+                new ReadOnlyStringWrapper(cellData.getValue().getFormattedUnitPrice()));
+
+        colTotalPrice.setCellValueFactory(cellData ->
+                new ReadOnlyStringWrapper(cellData.getValue().getFormattedTotalPrice()));
 
     }
 

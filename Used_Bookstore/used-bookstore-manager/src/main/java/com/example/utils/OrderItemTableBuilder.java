@@ -19,12 +19,14 @@ public class OrderItemTableBuilder {
         colQuantity.setCellValueFactory(data -> new ReadOnlyObjectWrapper<>(data.getValue().getQuantity()));
         colQuantity.setPrefWidth(80);
 
-        TableColumn<OrderItem, Double> colUnitPrice = new TableColumn<>("Đơn giá");
-        colUnitPrice.setCellValueFactory(data -> new ReadOnlyObjectWrapper<>(data.getValue().getUnitPrice()));
+        // Dùng kiểu String để hiển thị định dạng tiền tệ cho Đơn giá
+        TableColumn<OrderItem, String> colUnitPrice = new TableColumn<>("Đơn giá");
+        colUnitPrice.setCellValueFactory(data -> new ReadOnlyObjectWrapper<>(data.getValue().getFormattedUnitPrice()));
         colUnitPrice.setPrefWidth(100);
 
-        TableColumn<OrderItem, Double> colTotal = new TableColumn<>("Thành tiền");
-        colTotal.setCellValueFactory(data -> new ReadOnlyObjectWrapper<>(data.getValue().getTotalPrice()));
+        // Dùng kiểu String để hiển thị định dạng tiền tệ cho Thành tiền
+        TableColumn<OrderItem, String> colTotal = new TableColumn<>("Thành tiền");
+        colTotal.setCellValueFactory(data -> new ReadOnlyObjectWrapper<>(data.getValue().getFormattedTotalPrice()));
         colTotal.setPrefWidth(120);
 
         table.getColumns().addAll(colTitle, colQuantity, colUnitPrice, colTotal);
