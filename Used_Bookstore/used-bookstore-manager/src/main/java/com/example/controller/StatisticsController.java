@@ -1,14 +1,12 @@
 package com.example.controller;
 
-import com.example.DatabaseConnection;
+import com.example.controller.dao.StatisticsDao;
 import com.example.model.RevenueByDate;
 import com.example.model.RevenueByBook;
 import com.example.model.RevenueByEmployee;
-import com.itextpdf.text.*;
-import com.itextpdf.text.pdf.BaseFont;
-import com.itextpdf.text.pdf.PdfPCell;
-import com.itextpdf.text.pdf.PdfPTable;
-import com.itextpdf.text.pdf.PdfWriter;
+import com.example.utils.PdfExportUtils;
+import com.example.utils.ExcelExportUtils;
+
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleObjectProperty;
@@ -20,7 +18,6 @@ import javafx.scene.control.*;
 import javafx.stage.FileChooser;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.sql.*;
 import java.time.LocalDate;
 
@@ -71,27 +68,9 @@ public class StatisticsController {
 
     private void loadRevenueByDate() {
         revenueByDateList.clear();
-        String sql = """
-            SELECT DATE(ngay_tao) AS ngay, COUNT(*) AS so_hoa_don, SUM(tong_tien) AS tong_tien
-            FROM donhang
-            WHERE trang_thai = 'hoan_thanh'
-            GROUP BY DATE(ngay_tao)
-            ORDER BY ngay DESC;
-        """;
-
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
-
-            while (rs.next()) {
-                LocalDate date = rs.getDate("ngay").toLocalDate();
-                int count = rs.getInt("so_hoa_don");
-                double total = rs.getDouble("tong_tien");
-                revenueByDateList.add(new RevenueByDate(date, count, total));
-            }
-
+        try {
+            revenueByDateList.addAll(StatisticsDao.getRevenueByDateList());
             timeTable.setItems(revenueByDateList);
-
         } catch (SQLException e) {
             e.printStackTrace();
             showAlert("Lỗi", "Không thể tải doanh thu theo ngày.");
@@ -100,28 +79,9 @@ public class StatisticsController {
 
     private void loadRevenueByBook() {
         revenueByBookList.clear();
-        String sql = """
-            SELECT s.ten_sach, SUM(ct.so_luong) AS so_luong
-            FROM chitiet_donhang ct
-            JOIN sach s ON ct.ma_sach = s.ma_sach
-            JOIN donhang d ON ct.ma_don = d.ma_don
-            WHERE d.trang_thai = 'hoan_thanh'
-            GROUP BY s.ten_sach
-            ORDER BY so_luong DESC;
-        """;
-
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
-
-            while (rs.next()) {
-                String bookName = rs.getString("ten_sach");
-                int quantity = rs.getInt("so_luong");
-                revenueByBookList.add(new RevenueByBook(bookName, quantity));
-            }
-
+        try {
+            revenueByBookList.addAll(StatisticsDao.getRevenueByBookList());
             bookTable.setItems(revenueByBookList);
-
         } catch (SQLException e) {
             e.printStackTrace();
             showAlert("Lỗi", "Không thể tải thống kê sách bán chạy.");
@@ -130,29 +90,9 @@ public class StatisticsController {
 
     private void loadRevenueByEmployee() {
         revenueByEmployeeList.clear();
-        String sql = """
-                    SELECT nv.ho_ten, COUNT(d.ma_don) AS so_hoa_don, SUM(d.tong_tien) AS tong_tien
-                    FROM donhang d
-                    JOIN taikhoan tk ON d.nguoi_tao_id = tk.id
-                    JOIN nhanvien nv ON tk.id = nv.id_taikhoan
-                    WHERE d.trang_thai = 'hoan_thanh'
-                    GROUP BY nv.ho_ten
-                    ORDER BY tong_tien DESC;
-                """;
-
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
-
-            while (rs.next()) {
-                String name = rs.getString("ho_ten");
-                int invoiceCount = rs.getInt("so_hoa_don");
-                double revenue = rs.getDouble("tong_tien");
-                revenueByEmployeeList.add(new RevenueByEmployee(name, revenue, invoiceCount));
-            }
-
+        try {
+            revenueByEmployeeList.addAll(StatisticsDao.getRevenueByEmployeeList());
             employeeTable.setItems(revenueByEmployeeList);
-
         } catch (SQLException e) {
             e.printStackTrace();
             showAlert("Lỗi", "Không thể tải thống kê theo nhân viên.");
@@ -160,91 +100,74 @@ public class StatisticsController {
     }
 
     @FXML
-    public void handleExportPDF() {
-        try {
-            FileChooser fileChooser = new FileChooser();
-            fileChooser.setTitle("Lưu file PDF");
-            fileChooser.setInitialFileName("bao_cao_thong_ke.pdf");
-            fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("PDF files", "*.pdf"));
-            File file = fileChooser.showSaveDialog(null);
-            if (file == null) return;
+    public void handleExportExcel() {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Lưu file Excel thống kê");
+        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Excel Files", "*.xlsx"));
+        fileChooser.setInitialFileName("ThongKeDoanhThu.xlsx");
 
-            Document document = new Document();
-            PdfWriter.getInstance(document, new FileOutputStream(file));
-            document.open();
-
-            BaseFont bf = BaseFont.createFont("Fonts/arial.ttf", BaseFont.IDENTITY_H, BaseFont.EMBEDDED);
-            Font font = new Font(bf, 12);
-            Font titleFont = new Font(bf, 14, Font.BOLD);
-
-            // Doanh thu theo ngày
-            document.add(new Paragraph("📅 DOANH THU THEO NGÀY\n\n", titleFont));
-            PdfPTable dateTable = new PdfPTable(3);
-            dateTable.setWidthPercentage(100);
-            dateTable.setWidths(new float[]{3, 3, 3});
-
-            dateTable.addCell(new PdfPCell(new Phrase("Ngày", font)));
-            dateTable.addCell(new PdfPCell(new Phrase("Số hóa đơn", font)));
-            dateTable.addCell(new PdfPCell(new Phrase("Tổng doanh thu", font)));
-
-            for (RevenueByDate entry : revenueByDateList) {
-                dateTable.addCell(new PdfPCell(new Phrase(entry.getDate().toString(), font)));
-                dateTable.addCell(new PdfPCell(new Phrase(String.valueOf(entry.getInvoiceCount()), font)));
-                dateTable.addCell(new PdfPCell(new Phrase(String.format("%.0f", entry.getTotalRevenue()), font)));
+        File file = fileChooser.showSaveDialog(timeTable.getScene().getWindow());
+        if (file != null) {
+            try {
+                ExcelExportUtils.exportStatisticsToExcel(
+                        file,
+                        timeTable.getItems(),
+                        bookTable.getItems(),
+                        employeeTable.getItems()
+                );
+                showSuccess("Đã xuất file Excel thành công.");
+            } catch (Exception e) {
+                e.printStackTrace();
+                showError("Lỗi khi xuất file Excel: " + e.getMessage());
             }
-
-            document.add(dateTable);
-            document.add(new Paragraph("\n"));
-
-            // === 2. Thống kê sách bán chạy ===
-            document.add(new Paragraph("📚 SÁCH BÁN CHẠY\n\n", titleFont));
-            PdfPTable bookTable = new PdfPTable(2);
-            bookTable.setWidthPercentage(100);
-            bookTable.setWidths(new float[]{4, 2});
-
-            bookTable.addCell(new PdfPCell(new Phrase("Tên sách", font)));
-            bookTable.addCell(new PdfPCell(new Phrase("Số lượng bán", font)));
-
-            for (RevenueByBook book : revenueByBookList) {
-                bookTable.addCell(new PdfPCell(new Phrase(book.getBookName(), font)));
-                bookTable.addCell(new PdfPCell(new Phrase(String.valueOf(book.getQuantity()), font)));
-            }
-
-            document.add(bookTable);
-            document.add(new Paragraph("\n"));
-
-            // === 3. Doanh thu theo nhân viên ===
-            document.add(new Paragraph("👥 DOANH THU THEO NHÂN VIÊN\n\n", titleFont));
-            PdfPTable empTable = new PdfPTable(3);
-            empTable.setWidthPercentage(100);
-            empTable.setWidths(new float[]{4, 2, 3});
-
-            empTable.addCell(new PdfPCell(new Phrase("Tên nhân viên", font)));
-            empTable.addCell(new PdfPCell(new Phrase("Số hóa đơn", font)));
-            empTable.addCell(new PdfPCell(new Phrase("Tổng doanh thu", font)));
-
-            for (RevenueByEmployee emp : revenueByEmployeeList) {
-                empTable.addCell(new PdfPCell(new Phrase(emp.getEmployeeName(), font)));
-                empTable.addCell(new PdfPCell(new Phrase(String.valueOf(emp.getInvoiceCount()), font)));
-                empTable.addCell(new PdfPCell(new Phrase(String.format("%.0f", emp.getRevenue()), font)));
-            }
-
-            document.add(empTable);
-            document.close();
-
-            showAlert("Thành công", "Xuất PDF toàn bộ thống kê thành công!");
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            showAlert("Lỗi", "Xuất PDF thất bại.");
         }
     }
+
+    @FXML
+    public void handleExportPDF() {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Lưu file PDF thống kê");
+        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("PDF Files", "*.pdf"));
+        fileChooser.setInitialFileName("ThongKeDoanhThu.pdf");
+
+        File file = fileChooser.showSaveDialog(timeTable.getScene().getWindow());
+        if (file != null) {
+            try {
+                PdfExportUtils.exportStatistics(
+                        file,
+                        timeTable.getItems(),
+                        bookTable.getItems(),
+                        employeeTable.getItems()
+                );
+                showAlert("✅ Thành công", "Đã xuất file PDF thống kê.");
+            } catch (Exception e) {
+                e.printStackTrace();
+                showAlert("❌ Lỗi", "Xuất file PDF thất bại: " + e.getMessage());
+            }
+        }
+    }
+
 
     private void showAlert(String title, String content) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(content);
+        alert.showAndWait();
+    }
+
+    private void showSuccess(String message) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("✅ Thành công");
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+    private void showError(String message) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle("❌ Lỗi");
+        alert.setHeaderText(null);
+        alert.setContentText(message);
         alert.showAndWait();
     }
 }

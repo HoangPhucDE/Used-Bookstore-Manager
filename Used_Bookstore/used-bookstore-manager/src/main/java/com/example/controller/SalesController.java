@@ -10,7 +10,8 @@ import com.example.model.Customer;
 import com.example.model.OrderItem;
 import com.example.controller.dao.CustomerAccountService;
 import com.example.utils.BookDialogUtil;
-import com.example.utils.InvoiceGenerator;
+import com.example.utils.PdfExportUtils;
+
 
 import com.example.DatabaseConnection;
 import javafx.collections.FXCollections;
@@ -220,12 +221,25 @@ public class SalesController {
 
                 File selectedFile = fileChooser.showSaveDialog(orderTable.getScene().getWindow());
                 if (selectedFile != null) {
-                    InvoiceGenerator.generateInvoice(
-                            selectedFile,
-                            orderId, name, phone, email, address, orderType,
-                            new ArrayList<>(cartItems),
-                            cartItems.stream().mapToDouble(OrderItem::getTotalPrice).sum()
-                    );
+                    try {
+                        PdfExportUtils.exportInvoice(
+                                selectedFile,
+                                orderId,
+                                name,
+                                phone,
+                                email,
+                                address,
+                                orderType,
+                                new ArrayList<>(cartItems),
+                                cartItems.stream().mapToDouble(OrderItem::getTotalPrice).sum()
+                        );
+                        showSuccess("Hóa đơn đã được lưu thành công.");
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        showError("Lỗi khi xuất hóa đơn: " + e.getMessage());
+                    }
+
+
                     showSuccess("Hóa đơn đã được lưu thành công.");
                 }
             }
