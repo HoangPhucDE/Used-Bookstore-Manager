@@ -35,7 +35,7 @@
 
             <Region HBox.hgrow="ALWAYS" />
 
-            <Button text="+ Thêm khách hàng" onAction="#showAddUserDialog"
+            <Button text="+ Thêm khách hàng" onAction="#showAddCustomerDialog"
                     style="-fx-background-color: #2ecc71; -fx-text-fill: white; -fx-background-radius: 6;" />
         </HBox>
 

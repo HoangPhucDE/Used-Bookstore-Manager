@@ -2,6 +2,8 @@ package com.example.controller.dao;
 
 import com.example.DatabaseConnection;
 import com.example.model.Customer;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 
 import java.sql.*;
 
@@ -65,5 +67,87 @@ public class CustomerDao {
             e.printStackTrace();
         }
         return null;
+    }
+
+    /**
+     * ✅ Trả về danh sách khách hàng theo từ khoá và trạng thái
+     */
+    public ObservableList<Customer> findAll(String keyword, String statusFilter) {
+        ObservableList<Customer> list = FXCollections.observableArrayList();
+
+        String sql = """
+            SELECT kh.ma_kh, kh.ho_ten, kh.email, kh.sdt, kh.dia_chi, tk.trang_thai
+            FROM khachhang kh
+            JOIN taikhoan tk ON kh.id_taikhoan = tk.id
+            WHERE (kh.ho_ten LIKE ? OR kh.email LIKE ? OR kh.sdt LIKE ?)
+        """;
+
+        boolean filterStatus = statusFilter != null && !statusFilter.equals("Tất cả");
+        if (filterStatus) {
+            sql += " AND tk.trang_thai = ?";
+        }
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            String likeKeyword = "%" + keyword + "%";
+            stmt.setString(1, likeKeyword);
+            stmt.setString(2, likeKeyword);
+            stmt.setString(3, likeKeyword);
+
+            if (filterStatus) {
+                boolean statusBool = statusFilter.equals("Đang hoạt động");
+                stmt.setBoolean(4, statusBool);
+            }
+
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                boolean status = rs.getBoolean("trang_thai");
+                String statusStr = status ? "Đang hoạt động" : "Khóa";
+                Customer kh = new Customer(
+                        rs.getInt("ma_kh"),
+                        rs.getString("ho_ten"),
+                        rs.getString("email"),
+                        rs.getString("sdt"),
+                        rs.getString("dia_chi"),
+                        statusStr
+                );
+                list.add(kh);
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+
+    public void updateCustomer(Connection conn, Customer customer) throws SQLException {
+        String sql = """
+        UPDATE khachhang
+        SET ho_ten = ?, email = ?, sdt = ?, dia_chi = ?
+        WHERE ma_kh = ?
+    """;
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, customer.getHoTen());
+            stmt.setString(2, customer.getEmail());
+            stmt.setString(3, customer.getSoDienThoai());
+            stmt.setString(4, customer.getDiaChi());
+            stmt.setInt(5, customer.getMaKh());
+            stmt.executeUpdate();
+        }
+    }
+    public void updateAccountStatusByCustomerId(Connection conn, int customerId, boolean status) throws SQLException {
+        String sql = """
+        UPDATE taikhoan
+        SET trang_thai = ?
+        WHERE id = (
+            SELECT id_taikhoan FROM khachhang WHERE ma_kh = ?
+        )
+    """;
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setBoolean(1, status);
+            stmt.setInt(2, customerId);
+            stmt.executeUpdate();
+        }
     }
 }
