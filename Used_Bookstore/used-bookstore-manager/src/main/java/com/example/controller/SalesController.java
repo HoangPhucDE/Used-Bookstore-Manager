@@ -20,6 +20,7 @@ import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 
@@ -56,7 +57,8 @@ public class SalesController {
 
     @FXML
     public void initialize() {
-        orderTypeCombo.getItems().addAll("online", "offline", "trahang", "nhap_kho");
+
+        orderTypeCombo.getItems().addAll(orderTypeMap.values());
         orderTypeCombo.getSelectionModel().selectFirst();
 
         colBookTitle.setCellValueFactory(new PropertyValueFactory<>("bookTitle"));
@@ -99,6 +101,39 @@ public class SalesController {
         colTotalPrice.setCellValueFactory(cellData ->
                 new ReadOnlyStringWrapper(cellData.getValue().getFormattedTotalPrice()));
 
+        orderTable.setEditable(true);
+        colQuantity.setCellFactory(TextFieldTableCell.forTableColumn(new javafx.util.converter.IntegerStringConverter()));
+        colQuantity.setOnEditCommit(event -> {
+            OrderItem item = event.getRowValue();
+            int newQuantity = event.getNewValue();
+
+            // Nếu nhập 0 thì hỏi có muốn xóa khỏi giỏ không
+            if (newQuantity == 0) {
+                Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+                confirm.setHeaderText("Bạn có muốn xoá sách này khỏi giỏ?");
+                confirm.setContentText(item.getBookTitle());
+                if (confirm.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK) {
+                    cartItems.remove(item);
+                } else {
+                    orderTable.refresh();
+                }
+                updateTotal();
+                return;
+            }
+
+            Book book = allBooks.stream()
+                    .filter(b -> b.getId() == item.getBookId())
+                    .findFirst().orElse(null);
+
+            if (book == null || newQuantity < 0 || newQuantity > book.getStock()) {
+                showError("Số lượng không hợp lệ hoặc vượt quá tồn kho.");
+                orderTable.refresh(); // khôi phục lại nếu sai
+                return;
+            }
+
+            item.setQuantity(newQuantity);
+            updateTotal();
+        });
     }
 
     private void loadBooksFromDatabase() {
@@ -122,6 +157,10 @@ public class SalesController {
         int quantity;
         try {
             quantity = Integer.parseInt(quantityField.getText());
+            if (quantity <= 0) {
+                showError("Số lượng phải lớn hơn 0.");
+                return;
+            }
         } catch (NumberFormatException e) {
             showError("Số lượng không hợp lệ.");
             return;
@@ -136,15 +175,34 @@ public class SalesController {
             return;
         }
 
-        if (quantity > selectedBook.getStock()) {
-            showError("Vượt quá số lượng tồn kho: " + selectedBook.getStock());
-            return;
+        // Kiểm tra xem sách đã có trong giỏ chưa
+        Optional<OrderItem> existing = cartItems.stream()
+                .filter(item -> item.getBookId() == selectedBook.getId())
+                .findFirst();
+
+        if (existing.isPresent()) {
+            OrderItem item = existing.get();
+            int newQuantity = item.getQuantity() + quantity;
+
+            if (newQuantity > selectedBook.getStock()) {
+                showError("Vượt quá số lượng tồn kho: " + selectedBook.getStock());
+                return;
+            }
+
+            item.setQuantity(newQuantity);  // cập nhật số lượng mới
+            orderTable.refresh();           // làm mới TableView
+        } else {
+            if (quantity > selectedBook.getStock()) {
+                showError("Vượt quá số lượng tồn kho: " + selectedBook.getStock());
+                return;
+            }
+            cartItems.add(new OrderItem(selectedBook.getId(), bookTitle, quantity, selectedBook.getPrice()));
         }
 
-        cartItems.add(new OrderItem(selectedBook.getId(), bookTitle, quantity, selectedBook.getPrice()));
         quantityField.clear();
         updateTotal();
     }
+
 
     @FXML
     public void handleDeleteItem() {
@@ -159,6 +217,13 @@ public class SalesController {
 
     @FXML
     public void handleSubmitOrder() {
+        String selectedLabel = orderTypeCombo.getValue();  // "Bán tại quầy"
+        String orderType = orderTypeMap.entrySet().stream()
+                .filter(entry -> entry.getValue().equals(selectedLabel))
+                .map(Map.Entry::getKey)
+                .findFirst()
+                .orElse("offline");
+
         if (cartItems.isEmpty()) {
             showError("Chưa có sách trong giỏ hàng.");
             return;
@@ -168,7 +233,12 @@ public class SalesController {
         String phone = phoneField.getText().trim();
         String email = emailField.getText().trim();
         String address = addressField.getText().trim();
-        String orderType = orderTypeCombo.getValue();
+
+        double totalAmount = cartItems.stream().mapToDouble(OrderItem::getTotalPrice).sum();
+        if (totalAmount <= 0) {
+            showError("Tổng tiền đơn hàng phải lớn hơn 0.");
+            return;
+        }
 
         // Người bán (đang đăng nhập)
         int createdById = LoginController.currentUserId;
@@ -243,8 +313,6 @@ public class SalesController {
                         e.printStackTrace();
                         showError("Lỗi khi xuất hóa đơn: " + e.getMessage());
                     }
-
-
                     showSuccess("Hóa đơn đã được lưu thành công.");
                 }
             }
@@ -256,32 +324,6 @@ public class SalesController {
         } catch (SQLException e) {
             e.printStackTrace();
             showError("Lỗi khi xử lý đơn hàng: " + e.getMessage());
-        }
-    }
-
-    private void saveOrderDetails(Connection conn, int orderId) throws SQLException {
-        String sql = "INSERT INTO chitiet_donhang (ma_don, ma_sach, so_luong, don_gia) VALUES (?, ?, ?, ?)";
-        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-            for (OrderItem item : cartItems) {
-                stmt.setInt(1, orderId);
-                stmt.setInt(2, item.getBookId());
-                stmt.setInt(3, item.getQuantity());
-                stmt.setDouble(4, item.getUnitPrice());
-                stmt.addBatch();
-            }
-            stmt.executeBatch();
-        }
-    }
-
-    private void updateInventory(Connection conn) throws SQLException {
-        String sql = "UPDATE sach SET so_luong_ton = so_luong_ton - ? WHERE ma_sach = ?";
-        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-            for (OrderItem item : cartItems) {
-                stmt.setInt(1, item.getQuantity());
-                stmt.setInt(2, item.getBookId());
-                stmt.addBatch();
-            }
-            stmt.executeBatch();
         }
     }
 
@@ -337,4 +379,10 @@ public class SalesController {
         alert.setContentText(msg);
         alert.show();
     }
+    private final Map<String, String> orderTypeMap = Map.of(
+            "offline", "Bán tại quầy",
+            "trahang", "Trả hàng",
+            "nhap_kho", "Nhập kho"
+    );
+
 }

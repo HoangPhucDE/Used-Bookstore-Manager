@@ -26,6 +26,10 @@ public class OrderItem {
         return bookTitle;
     }
 
+    public void setQuantity(int quantity) {
+        this.quantity = quantity;
+    }
+
     // Getter: Số lượng
     public int getQuantity() {
         return quantity;
