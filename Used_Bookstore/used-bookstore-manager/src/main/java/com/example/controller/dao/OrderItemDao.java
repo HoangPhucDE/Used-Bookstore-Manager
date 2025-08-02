@@ -41,4 +41,17 @@ public class OrderItemDao {
         }
         return items;
     }
+    public void insertOrderItems(Connection conn, int orderId, List<OrderItem> items) throws SQLException {
+        String sql = "INSERT INTO chitiet_donhang (ma_don, ma_sach, so_luong, don_gia) VALUES (?, ?, ?, ?)";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            for (OrderItem item : items) {
+                stmt.setInt(1, orderId);
+                stmt.setInt(2, item.getBookId());
+                stmt.setInt(3, item.getQuantity());
+                stmt.setDouble(4, item.getUnitPrice());
+                stmt.addBatch();
+            }
+            stmt.executeBatch();
+        }
+    }
 }
