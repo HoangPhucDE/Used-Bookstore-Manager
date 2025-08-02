@@ -217,7 +217,7 @@ public class SalesController {
 
     @FXML
     public void handleSubmitOrder() {
-        String selectedLabel = orderTypeCombo.getValue();  // "Bán tại quầy"
+        String selectedLabel = orderTypeCombo.getValue();
         String orderType = orderTypeMap.entrySet().stream()
                 .filter(entry -> entry.getValue().equals(selectedLabel))
                 .map(Map.Entry::getKey)
@@ -245,7 +245,6 @@ public class SalesController {
             return;
         }
 
-        // Người bán (đang đăng nhập)
         int createdById = LoginController.currentUserId;
 
         if (name.isEmpty() || phone.isEmpty()) {
@@ -253,22 +252,32 @@ public class SalesController {
             return;
         }
 
-        // Nếu tích checkbox thì yêu cầu username + password
         String username = usernameField.getText().trim();
         String password = passwordField.getText().trim();
         boolean createAccount = createAccountCheckbox.isSelected();
 
-        if (createAccount && (username.isEmpty() || password.isEmpty())) {
-            showError("Vui lòng nhập username và mật khẩu để tạo tài khoản khách hàng.");
-            return;
+        if (createAccount) {
+            if (username.isEmpty() || password.isEmpty()) {
+                showError("Vui lòng nhập username và mật khẩu để tạo tài khoản khách hàng.");
+                return;
+            }
+
+            if (accountDao.findAccountIdByUsername(username) != null) {
+                showError("Tên đăng nhập đã tồn tại. Vui lòng chọn tên khác.");
+                return;
+            }
+            if (accountDao.isEmailExists(email)) {
+                showError("Email đã tồn tại. Vui lòng dùng email khác.");
+                return;
+            }
         }
 
         try (Connection conn = DatabaseConnection.getConnection()) {
             conn.setAutoCommit(false);
 
-            // 1. Tạo tài khoản khách (nếu được chọn)
+            int accId = -1;
             if (createAccount) {
-                int accId = accountService.createCustomerAccountIfNotExists(
+                accId = accountService.createCustomerAccountIfNotExists(
                         conn, username, password, email, name, phone, address
                 );
                 if (accId == -1) {
@@ -278,21 +287,16 @@ public class SalesController {
                 }
             }
 
-            // 2. Tạo đơn hàng (người tạo là nhân viên đang đăng nhập)
             OrderDao orderDao = new OrderDao();
             int orderId = orderDao.insertOrder(conn, name, phone, email, address, createdById, orderType);
 
-            // 3. Ghi chi tiết đơn hàng
             OrderItemDao orderItemDao = new OrderItemDao();
             orderItemDao.insertOrderItems(conn, orderId, cartItems);
 
-            // 4. Trừ tồn kho
             bookDao.updateStockAfterOrder(conn, cartItems);
 
-            // 5. Commit
             conn.commit();
 
-            // 6. Tùy chọn xuất hóa đơn
             if (printInvoiceCheckbox.isSelected()) {
                 FileChooser fileChooser = new FileChooser();
                 fileChooser.setTitle("Lưu hóa đơn");
@@ -311,14 +315,13 @@ public class SalesController {
                                 address,
                                 orderType,
                                 new ArrayList<>(cartItems),
-                                cartItems.stream().mapToDouble(OrderItem::getTotalPrice).sum()
+                                totalAmount
                         );
                         showSuccess("Hóa đơn đã được lưu thành công.");
                     } catch (Exception e) {
                         e.printStackTrace();
                         showError("Lỗi khi xuất hóa đơn: " + e.getMessage());
                     }
-                    showSuccess("Hóa đơn đã được lưu thành công.");
                 }
             }
 
@@ -331,6 +334,7 @@ public class SalesController {
             showError("Lỗi khi xử lý đơn hàng: " + e.getMessage());
         }
     }
+
 
     private void autoFillCustomerInfo() {
         String phone = phoneField.getText().trim();
@@ -389,5 +393,4 @@ public class SalesController {
             "trahang", "Trả hàng",
             "nhap_kho", "Nhập kho"
     );
-
 }
