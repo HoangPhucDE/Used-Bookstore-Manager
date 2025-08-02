@@ -21,8 +21,9 @@ public class EmployeeManagementController {
     @FXML private TableView<Employee> employeeTable;
     @FXML private TableColumn<Employee, String> colId;
     @FXML private TableColumn<Employee, String> colName;
-    @FXML private TableColumn<Employee, String> colEmail;
+    @FXML private TableColumn<Employee, String> colDob;
     @FXML private TableColumn<Employee, String> colPhone;
+    @FXML private TableColumn<Employee, String> colEmail;
     @FXML private TableColumn<Employee, String> colRole;
     @FXML private TableColumn<Employee, Void> colActions;
     @FXML private TextField searchField;
@@ -35,8 +36,9 @@ public class EmployeeManagementController {
     public void initialize() {
         colId.setCellValueFactory(new PropertyValueFactory<>("id"));
         colName.setCellValueFactory(new PropertyValueFactory<>("name"));
-        colEmail.setCellValueFactory(new PropertyValueFactory<>("email"));
+        colDob.setCellValueFactory(new PropertyValueFactory<>("ngaySinh"));
         colPhone.setCellValueFactory(new PropertyValueFactory<>("phone"));
+        colEmail.setCellValueFactory(new PropertyValueFactory<>("email"));
         colRole.setCellValueFactory(new PropertyValueFactory<>("role"));
 
         loadEmployees();
@@ -55,7 +57,8 @@ public class EmployeeManagementController {
                 if (newVal == null || newVal.isEmpty()) return true;
                 String keyword = newVal.toLowerCase();
                 return emp.getName().toLowerCase().contains(keyword)
-                        || emp.getEmail().toLowerCase().contains(keyword);
+                        || emp.getEmail().toLowerCase().contains(keyword)
+                        || emp.getPhone().contains(keyword);
             });
         });
     }
@@ -69,7 +72,6 @@ public class EmployeeManagementController {
             {
                 btnEdit.setStyle("-fx-background-color: #3498db; -fx-text-fill: white;");
                 btnDelete.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white;");
-
                 btnEdit.setOnAction(e -> showEditDialog(getTableView().getItems().get(getIndex())));
                 btnDelete.setOnAction(e -> deleteEmployee(getTableView().getItems().get(getIndex())));
             }
@@ -108,8 +110,8 @@ public class EmployeeManagementController {
         TextField usernameField = new TextField();
         PasswordField passwordField = new PasswordField();
         ComboBox<String> roleBox = new ComboBox<>(FXCollections.observableArrayList("admin", "user"));
-        roleBox.getSelectionModel().selectFirst();
         DatePicker dobPicker = new DatePicker();
+        roleBox.getSelectionModel().selectFirst();
 
         GridPane grid = new GridPane();
         grid.setHgap(10); grid.setVgap(10); grid.setStyle("-fx-padding: 20;");
@@ -126,7 +128,6 @@ public class EmployeeManagementController {
         dialog.getDialogPane().getButtonTypes().addAll(addButtonType, ButtonType.CANCEL);
 
         Button addBtn = (Button) dialog.getDialogPane().lookupButton(addButtonType);
-
         addBtn.addEventFilter(javafx.event.ActionEvent.ACTION, event -> {
             String name = nameField.getText().trim();
             String email = emailField.getText().trim();
@@ -136,83 +137,64 @@ public class EmployeeManagementController {
             String role = roleBox.getValue();
             java.time.LocalDate dob = dobPicker.getValue();
 
-            // 1. Kiểm tra rỗng
-            if (name.isEmpty() || email.isEmpty() || phone.isEmpty()
-                    || username.isEmpty() || password.isEmpty() || dob == null) {
+            // Kiểm tra đầu vào
+            if (name.isEmpty() || email.isEmpty() || phone.isEmpty() ||
+                    username.isEmpty() || password.isEmpty() || dob == null) {
                 showAlert("Lỗi", "Vui lòng nhập đầy đủ thông tin.");
-                event.consume();
-                return;
+                event.consume(); return;
             }
 
-            // 2. Kiểm tra định dạng
             if (!ValidationUtils.isValidEmail(email)) {
                 showAlert("Lỗi", "Email không hợp lệ.");
-                emailField.requestFocus();
-                event.consume();
-                return;
+                emailField.requestFocus(); event.consume(); return;
             }
 
             if (!ValidationUtils.isValidPhone(phone)) {
                 showAlert("Lỗi", "SĐT phải có 10 chữ số và bắt đầu bằng 0.");
-                phoneField.requestFocus();
-                event.consume();
-                return;
+                phoneField.requestFocus(); event.consume(); return;
             }
 
             if (!ValidationUtils.isValidUsername(username)) {
-                showAlert("Lỗi", "Username phải từ 4 ký tự trở lên.");
-                usernameField.requestFocus();
-                event.consume();
-                return;
+                showAlert("Lỗi", "Username phải từ 4 ký tự.");
+                usernameField.requestFocus(); event.consume(); return;
             }
 
             if (!ValidationUtils.isValidPassword(password)) {
-                showAlert("Lỗi", "Mật khẩu phải từ 6 ký tự trở lên.");
-                passwordField.requestFocus();
-                event.consume();
-                return;
+                showAlert("Lỗi", "Mật khẩu phải từ 6 ký tự.");
+                passwordField.requestFocus(); event.consume(); return;
             }
 
             if (!ValidationUtils.isValidDateOfBirth(dob)) {
                 showAlert("Lỗi", "Ngày sinh không hợp lệ.");
-                dobPicker.requestFocus();
-                event.consume();
-                return;
+                dobPicker.requestFocus(); event.consume(); return;
             }
 
-            // 3. Xác nhận thêm
+            // Xác nhận trước khi thêm
             Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
             confirm.setTitle("Xác nhận thêm");
             confirm.setHeaderText("Bạn có chắc muốn thêm nhân viên?");
             confirm.setContentText("Tên: " + name + "\nUsername: " + username);
             if (confirm.showAndWait().orElse(ButtonType.CANCEL) != ButtonType.OK) {
-                event.consume();
-                return;
+                event.consume(); return;
             }
 
             try {
                 AccountDao accountDao = new AccountDao();
 
-                // 4. Kiểm tra trùng
                 if (accountDao.findAccountIdByUsername(username) != null) {
-                    showAlert("Lỗi", "Username đã tồn tại. Hãy chọn tên khác.");
-                    usernameField.requestFocus();
-                    event.consume();
-                    return;
+                    showAlert("Lỗi", "Username đã tồn tại.");
+                    usernameField.requestFocus(); event.consume(); return;
                 }
 
                 if (accountDao.isEmailExists(email)) {
-                    showAlert("Lỗi", "Email đã tồn tại. Hãy chọn email khác.");
-                    emailField.requestFocus();
-                    event.consume();
-                    return;
+                    showAlert("Lỗi", "Email đã tồn tại.");
+                    emailField.requestFocus(); event.consume(); return;
                 }
 
-                // 5. Tạo tài khoản + nhân viên
                 int accId = employeeDao.createAccount(username, password, role, email);
                 if (accId == -1) throw new Exception("Không thể tạo tài khoản.");
 
-                Employee emp = new Employee(null, name, email, phone, role);
+                Employee emp = new Employee(null, name, email, phone, role, dob.toString());
                 int empId = employeeDao.addEmployee(emp, Date.valueOf(dob), accId);
                 if (empId != -1) {
                     emp.setId(String.valueOf(empId));
@@ -224,29 +206,6 @@ public class EmployeeManagementController {
                 ex.printStackTrace();
                 showAlert("Lỗi", "Không thể thêm nhân viên:\n" + ex.getMessage());
                 event.consume();
-            }
-        });
-
-
-        // Xác nhận nếu Cancel khi đã nhập dữ liệu
-        dialog.setOnCloseRequest(evt -> {
-            if (dialog.getResult() == ButtonType.CANCEL) {
-                boolean hasInput = !nameField.getText().isBlank()
-                        || !emailField.getText().isBlank()
-                        || !phoneField.getText().isBlank()
-                        || !usernameField.getText().isBlank()
-                        || !passwordField.getText().isBlank()
-                        || dobPicker.getValue() != null;
-
-                if (hasInput) {
-                    Alert cancelConfirm = new Alert(Alert.AlertType.CONFIRMATION);
-                    cancelConfirm.setTitle("Xác nhận huỷ");
-                    cancelConfirm.setHeaderText("Bạn có chắc muốn huỷ thao tác?");
-                    cancelConfirm.setContentText("Thông tin đã nhập sẽ bị mất.");
-                    if (cancelConfirm.showAndWait().orElse(ButtonType.CANCEL) != ButtonType.OK) {
-                        evt.consume(); // Ngăn đóng dialog
-                    }
-                }
             }
         });
 
@@ -287,21 +246,19 @@ public class EmployeeManagementController {
         dialog.showAndWait().ifPresent(updated -> {
             try {
                 employeeDao.updateEmployee(updated);
-
                 int accId = employeeDao.getAccountIdByEmployeeId(Integer.parseInt(updated.getId()));
                 if (accId != -1) {
                     employeeDao.updateAccount(accId, updated);
                 }
-
                 employeeTable.refresh();
             } catch (SQLException e) {
-                showAlert("Lỗi", "Không thể cập nhật nhân viên: " + e.getMessage());
+                showAlert("Lỗi", "Không thể cập nhật: " + e.getMessage());
             }
         });
     }
 
     private void showAlert(String title, String msg) {
-        Alert alert = new Alert(Alert.AlertType.ERROR);
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(msg);
