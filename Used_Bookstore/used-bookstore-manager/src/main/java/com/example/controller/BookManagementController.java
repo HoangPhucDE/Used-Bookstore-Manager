@@ -2,6 +2,7 @@ package com.example.controller;
 
 import com.example.controller.dao.BookDao;
 import com.example.model.Book;
+import com.example.utils.CurrencyFormatter;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -60,6 +61,23 @@ public class BookManagementController {
         colPrice.setCellValueFactory(new PropertyValueFactory<>("price"));
         colStock.setCellValueFactory(new PropertyValueFactory<>("stock"));
         colRating.setCellValueFactory(new PropertyValueFactory<>("rating"));
+
+        colImportPrice.setCellFactory(col -> new TableCell<>() {
+            @Override
+            protected void updateItem(Double value, boolean empty) {
+                super.updateItem(value, empty);
+                setText(empty || value == null ? "" : CurrencyFormatter.format(value));
+            }
+        });
+
+        colPrice.setCellFactory(col -> new TableCell<>() {
+            @Override
+            protected void updateItem(Double value, boolean empty) {
+                super.updateItem(value, empty);
+                setText(empty || value == null ? "" : CurrencyFormatter.format(value));
+            }
+        });
+
     }
 
     private void loadBooks() {
@@ -280,7 +298,6 @@ public class BookManagementController {
         dialog.showAndWait();
     }
 
-
     private void showBookDetails(Book book) {
         Dialog<Void> dialog = new Dialog<>();
         dialog.setTitle("Chi tiết sách");
@@ -301,8 +318,8 @@ public class BookManagementController {
         grid.addRow(0, new Label("Tên sách:"), new Label(book.getTitle()));
         grid.addRow(1, new Label("Tác giả:"), new Label(book.getAuthor()));
         grid.addRow(2, new Label("Thể loại:"), new Label(book.getCategory()));
-        grid.addRow(3, new Label("Giá nhập:"), new Label(book.getImportPrice() + " đ"));
-        grid.addRow(4, new Label("Giá bán:"), new Label(book.getPrice() + " đ"));
+        grid.addRow(3, new Label("Giá nhập:"), new Label(CurrencyFormatter.format(book.getImportPrice())));
+        grid.addRow(4, new Label("Giá bán:"), new Label(CurrencyFormatter.format(book.getPrice())));
         grid.addRow(5, new Label("Tồn kho:"), new Label(String.valueOf(book.getStock())));
         grid.addRow(6, new Label("Đánh giá:"), new Label(book.getRating() + "★"));
         grid.add(img, 1, 7);

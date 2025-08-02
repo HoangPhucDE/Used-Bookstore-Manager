@@ -1,5 +1,7 @@
 package com.example.controller.dao;
 
+import com.example.DatabaseConnection;
+
 import java.sql.*;
 
 public class AccountDao {
@@ -57,6 +59,22 @@ public class AccountDao {
             }
         }
     }
+
+    public Integer getAccountIdByUsername(String username) {
+        String sql = "SELECT id FROM taikhoan WHERE username = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, username);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) return rs.getInt("id");
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
 
     public void updateAccountStatus(Connection conn, int accountId, boolean status) throws SQLException {
         String sql = "UPDATE taikhoan SET trang_thai = ? WHERE id = ?";

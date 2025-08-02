@@ -1,6 +1,7 @@
 package com.example.controller;
 
-import com.example.DatabaseConnection;
+import com.example.controller.dao.AccountDao;
+import com.example.controller.dao.EmployeeDao;
 import com.example.model.Employee;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -11,9 +12,11 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 
-import java.sql.*;
+import java.sql.Date;
+import java.sql.SQLException;
 
 public class EmployeeManagementController {
+
     @FXML private TableView<Employee> employeeTable;
     @FXML private TableColumn<Employee, String> colId;
     @FXML private TableColumn<Employee, String> colName;
@@ -23,6 +26,7 @@ public class EmployeeManagementController {
     @FXML private TableColumn<Employee, Void> colActions;
     @FXML private TextField searchField;
 
+    private final EmployeeDao employeeDao = new EmployeeDao();
     private final ObservableList<Employee> employeeList = FXCollections.observableArrayList();
     private final FilteredList<Employee> filteredList = new FilteredList<>(employeeList, p -> true);
 
@@ -34,10 +38,14 @@ public class EmployeeManagementController {
         colPhone.setCellValueFactory(new PropertyValueFactory<>("phone"));
         colRole.setCellValueFactory(new PropertyValueFactory<>("role"));
 
-        loadEmployeesFromDatabase();
+        loadEmployees();
         employeeTable.setItems(filteredList);
         setupSearch();
         addActionButtons();
+    }
+
+    private void loadEmployees() {
+        employeeList.setAll(employeeDao.getAllEmployees());
     }
 
     private void setupSearch() {
@@ -45,34 +53,10 @@ public class EmployeeManagementController {
             filteredList.setPredicate(emp -> {
                 if (newVal == null || newVal.isEmpty()) return true;
                 String keyword = newVal.toLowerCase();
-                return emp.getName().toLowerCase().contains(keyword) || emp.getEmail().toLowerCase().contains(keyword);
+                return emp.getName().toLowerCase().contains(keyword)
+                        || emp.getEmail().toLowerCase().contains(keyword);
             });
         });
-    }
-
-    private void loadEmployeesFromDatabase() {
-        employeeList.clear();
-        String query = """
-                SELECT ma_nv, ho_ten, sdt, chuc_vu, taikhoan.email 
-                FROM nhanvien
-                JOIN taikhoan ON taikhoan.id = nhanvien.id_taikhoan
-            """;
-
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(query);
-             ResultSet rs = stmt.executeQuery()) {
-            while (rs.next()) {
-                employeeList.add(new Employee(
-                        String.valueOf(rs.getInt("ma_nv")),
-                        rs.getString("ho_ten"),
-                        rs.getString("email"),
-                        rs.getString("sdt"),
-                        rs.getString("chuc_vu")
-                ));
-            }
-        } catch (SQLException e) {
-            showAlert("Lỗi", "Không thể tải nhân viên: " + e.getMessage());
-        }
     }
 
     private void addActionButtons() {
@@ -102,27 +86,8 @@ public class EmployeeManagementController {
         confirm.setHeaderText("Bạn chắc chắn muốn xóa?");
         confirm.showAndWait().ifPresent(btn -> {
             if (btn == ButtonType.OK) {
-                try (Connection conn = DatabaseConnection.getConnection()) {
-                    int accId = -1;
-                    try (PreparedStatement ps = conn.prepareStatement("SELECT id_taikhoan FROM nhanvien WHERE ma_nv=?")) {
-                        ps.setInt(1, Integer.parseInt(emp.getId()));
-                        try (ResultSet rs = ps.executeQuery()) {
-                            if (rs.next()) accId = rs.getInt(1);
-                        }
-                    }
-
-                    try (PreparedStatement ps = conn.prepareStatement("DELETE FROM nhanvien WHERE ma_nv=?")) {
-                        ps.setInt(1, Integer.parseInt(emp.getId()));
-                        ps.executeUpdate();
-                    }
-
-                    if (accId != -1) {
-                        try (PreparedStatement ps = conn.prepareStatement("DELETE FROM taikhoan WHERE id=?")) {
-                            ps.setInt(1, accId);
-                            ps.executeUpdate();
-                        }
-                    }
-
+                try {
+                    employeeDao.deleteEmployeeAndAccount(Integer.parseInt(emp.getId()));
                     employeeList.remove(emp);
                 } catch (SQLException e) {
                     showAlert("Lỗi", "Không thể xóa: " + e.getMessage());
@@ -133,76 +98,135 @@ public class EmployeeManagementController {
 
     @FXML
     private void showAddEmployeeDialog() {
-        Dialog<Employee> dialog = new Dialog<>();
-        dialog.setTitle("Thêm nhân viên");
+        Dialog<ButtonType> dialog = new Dialog<>();
+        dialog.setTitle("Thêm nhân viên mới");
 
-        TextField name = new TextField();
-        TextField email = new TextField();
-        TextField phone = new TextField();
+        TextField nameField = new TextField();
+        TextField emailField = new TextField();
+        TextField phoneField = new TextField();
+        TextField usernameField = new TextField();
+        PasswordField passwordField = new PasswordField();
         ComboBox<String> roleBox = new ComboBox<>(FXCollections.observableArrayList("admin", "user"));
         roleBox.getSelectionModel().selectFirst();
-        DatePicker dob = new DatePicker();
+        DatePicker dobPicker = new DatePicker();
 
         GridPane grid = new GridPane();
-        grid.setHgap(10); grid.setVgap(10);
-        grid.addRow(0, new Label("Họ tên:"), name);
-        grid.addRow(1, new Label("Email:"), email);
-        grid.addRow(2, new Label("SĐT (cũng là username và mật khẩu):"), phone);
-        grid.addRow(3, new Label("Vai trò:"), roleBox);
-        grid.addRow(4, new Label("Ngày sinh:"), dob);
+        grid.setHgap(10); grid.setVgap(10); grid.setStyle("-fx-padding: 20;");
+        grid.addRow(0, new Label("Họ tên:"), nameField);
+        grid.addRow(1, new Label("Email:"), emailField);
+        grid.addRow(2, new Label("SĐT:"), phoneField);
+        grid.addRow(3, new Label("Username:"), usernameField);
+        grid.addRow(4, new Label("Mật khẩu:"), passwordField);
+        grid.addRow(5, new Label("Vai trò:"), roleBox);
+        grid.addRow(6, new Label("Ngày sinh:"), dobPicker);
 
         dialog.getDialogPane().setContent(grid);
-        dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+        ButtonType addButtonType = new ButtonType("Thêm", ButtonBar.ButtonData.OK_DONE);
+        dialog.getDialogPane().getButtonTypes().addAll(addButtonType, ButtonType.CANCEL);
 
-        dialog.setResultConverter(btn -> {
-            if (btn == ButtonType.OK) {
-                return new Employee(null, name.getText(), email.getText(), phone.getText(), roleBox.getValue());
+        Button addBtn = (Button) dialog.getDialogPane().lookupButton(addButtonType);
+
+        addBtn.addEventFilter(javafx.event.ActionEvent.ACTION, event -> {
+            String name = nameField.getText().trim();
+            String email = emailField.getText().trim();
+            String phone = phoneField.getText().trim();
+            String username = usernameField.getText().trim();
+            String password = passwordField.getText().trim();
+            String role = roleBox.getValue();
+            java.time.LocalDate dob = dobPicker.getValue();
+
+            // Kiểm tra đầu vào
+            if (name.isEmpty() || email.isEmpty() || phone.isEmpty()
+                    || username.isEmpty() || password.isEmpty() || dob == null) {
+                showAlert("Lỗi", "Vui lòng nhập đầy đủ thông tin.");
+                event.consume();
+                return;
             }
-            return null;
-        });
 
-        dialog.showAndWait().ifPresent(emp -> {
-            try (Connection conn = DatabaseConnection.getConnection()) {
-                String insertAccount = """
-                    INSERT INTO taikhoan (username, mat_khau, vai_tro, loai_nguoi_dung, email, trang_thai)
-                    VALUES (?, ?, ?, 'nhanvien', ?, TRUE)
-                """;
-                PreparedStatement accStmt = conn.prepareStatement(insertAccount, Statement.RETURN_GENERATED_KEYS);
-                accStmt.setString(1, emp.getPhone());
-                accStmt.setString(2, emp.getPhone());
-                accStmt.setString(3, emp.getRole());
-                accStmt.setString(4, emp.getEmail());
-                accStmt.executeUpdate();
+            if (!email.matches("^[\\w.-]+@[\\w.-]+\\.\\w+$")) {
+                showAlert("Lỗi", "Email không hợp lệ.");
+                emailField.requestFocus();
+                event.consume();
+                return;
+            }
 
-                int accId;
-                try (ResultSet rs = accStmt.getGeneratedKeys()) {
-                    rs.next();
-                    accId = rs.getInt(1);
+            if (!phone.matches("\\d{9,11}")) {
+                showAlert("Lỗi", "SĐT phải từ 9 đến 11 chữ số.");
+                phoneField.requestFocus();
+                event.consume();
+                return;
+            }
+
+            // Xác nhận trước khi thêm
+            Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+            confirm.setTitle("Xác nhận thêm");
+            confirm.setHeaderText("Bạn có chắc muốn thêm nhân viên?");
+            confirm.setContentText("Tên: " + name + "\nUsername: " + username);
+            if (confirm.showAndWait().orElse(ButtonType.CANCEL) != ButtonType.OK) {
+                event.consume();
+                return;
+            }
+
+            try {
+                AccountDao accountDao = new AccountDao();
+
+                // Kiểm tra username/email đã tồn tại
+                if (accountDao.findAccountIdByUsername(username) != null) {
+                    showAlert("Lỗi", "Username đã tồn tại. Hãy chọn tên khác.");
+                    usernameField.requestFocus();
+                    event.consume();
+                    return;
+                }
+                if (accountDao.isEmailExists(email)) {
+                    showAlert("Lỗi", "Email đã tồn tại. Hãy chọn email khác.");
+                    emailField.requestFocus();
+                    event.consume();
+                    return;
                 }
 
-                String insertEmp = """
-                    INSERT INTO nhanvien (ho_ten, ngay_sinh, sdt, chuc_vu, trang_thai, id_taikhoan)
-                    VALUES (?, ?, ?, ?, TRUE, ?)
-                """;
-                PreparedStatement empStmt = conn.prepareStatement(insertEmp, Statement.RETURN_GENERATED_KEYS);
-                empStmt.setString(1, emp.getName());
-                empStmt.setDate(2, dob.getValue() != null ? Date.valueOf(dob.getValue()) : null);
-                empStmt.setString(3, emp.getPhone());
-                empStmt.setString(4, emp.getRole());
-                empStmt.setInt(5, accId);
-                empStmt.executeUpdate();
+                // Tạo tài khoản
+                int accId = employeeDao.createAccount(username, password, role, email);
+                if (accId == -1) throw new Exception("Không thể tạo tài khoản.");
 
-                try (ResultSet rs = empStmt.getGeneratedKeys()) {
-                    if (rs.next()) {
-                        emp.setId(String.valueOf(rs.getInt(1)));
-                        employeeList.add(emp);
+                // Tạo nhân viên
+                Employee emp = new Employee(null, name, email, phone, role);
+                int empId = employeeDao.addEmployee(emp, Date.valueOf(dob), accId);
+                if (empId != -1) {
+                    emp.setId(String.valueOf(empId));
+                    employeeList.add(emp);
+                    showAlert("Thành công", "Đã thêm nhân viên mới.");
+                }
+
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                showAlert("Lỗi", "Không thể thêm nhân viên:\n" + ex.getMessage());
+                event.consume();
+            }
+        });
+
+        // Xác nhận nếu Cancel khi đã nhập dữ liệu
+        dialog.setOnCloseRequest(evt -> {
+            if (dialog.getResult() == ButtonType.CANCEL) {
+                boolean hasInput = !nameField.getText().isBlank()
+                        || !emailField.getText().isBlank()
+                        || !phoneField.getText().isBlank()
+                        || !usernameField.getText().isBlank()
+                        || !passwordField.getText().isBlank()
+                        || dobPicker.getValue() != null;
+
+                if (hasInput) {
+                    Alert cancelConfirm = new Alert(Alert.AlertType.CONFIRMATION);
+                    cancelConfirm.setTitle("Xác nhận huỷ");
+                    cancelConfirm.setHeaderText("Bạn có chắc muốn huỷ thao tác?");
+                    cancelConfirm.setContentText("Thông tin đã nhập sẽ bị mất.");
+                    if (cancelConfirm.showAndWait().orElse(ButtonType.CANCEL) != ButtonType.OK) {
+                        evt.consume(); // Ngăn đóng dialog
                     }
                 }
-
-            } catch (SQLException e) {
-                showAlert("Lỗi", "Không thể thêm nhân viên: " + e.getMessage());
             }
         });
+
+        dialog.showAndWait();
     }
 
     private void showEditDialog(Employee emp) {
@@ -237,36 +261,12 @@ public class EmployeeManagementController {
         });
 
         dialog.showAndWait().ifPresent(updated -> {
-            try (Connection conn = DatabaseConnection.getConnection()) {
-                String updateEmp = """
-                    UPDATE nhanvien SET ho_ten=?, sdt=?, chuc_vu=? WHERE ma_nv=?
-                """;
-                PreparedStatement empStmt = conn.prepareStatement(updateEmp);
-                empStmt.setString(1, updated.getName());
-                empStmt.setString(2, updated.getPhone());
-                empStmt.setString(3, updated.getRole());
-                empStmt.setInt(4, Integer.parseInt(updated.getId()));
-                empStmt.executeUpdate();
+            try {
+                employeeDao.updateEmployee(updated);
 
-                int accId = -1;
-                try (PreparedStatement stmt = conn.prepareStatement("SELECT id_taikhoan FROM nhanvien WHERE ma_nv = ?")) {
-                    stmt.setInt(1, Integer.parseInt(updated.getId()));
-                    try (ResultSet rs = stmt.executeQuery()) {
-                        if (rs.next()) accId = rs.getInt("id_taikhoan");
-                    }
-                }
-
+                int accId = employeeDao.getAccountIdByEmployeeId(Integer.parseInt(updated.getId()));
                 if (accId != -1) {
-                    String updateAccount = """
-                        UPDATE taikhoan SET email=?, vai_tro=?, username=?, mat_khau=? WHERE id=?
-                    """;
-                    PreparedStatement accStmt = conn.prepareStatement(updateAccount);
-                    accStmt.setString(1, updated.getEmail());
-                    accStmt.setString(2, updated.getRole());
-                    accStmt.setString(3, updated.getPhone());
-                    accStmt.setString(4, updated.getPhone());
-                    accStmt.setInt(5, accId);
-                    accStmt.executeUpdate();
+                    employeeDao.updateAccount(accId, updated);
                 }
 
                 employeeTable.refresh();
