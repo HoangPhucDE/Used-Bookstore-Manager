@@ -1,20 +1,22 @@
 package com.example.model;
 
 public class Customer {
-    private int maKh; // tương ứng với cột ma_kh trong CSDL
+    private int maKh;             // ma_kh
     private String hoTen;
     private String email;
     private String soDienThoai;
     private String diaChi;
     private String trangThai;
+    private int accountId;        // MỚI: account_id
 
-    public Customer(int maKh, String hoTen, String email, String soDienThoai, String diaChi, String trangThai) {
+    public Customer(int maKh, String hoTen, String email, String soDienThoai, String diaChi, String trangThai, int accountId) {
         this.maKh = maKh;
         this.hoTen = hoTen;
         this.email = email;
         this.soDienThoai = soDienThoai;
         this.diaChi = diaChi;
         this.trangThai = trangThai;
+        this.accountId = accountId;
     }
 
     // Getters
@@ -42,6 +44,10 @@ public class Customer {
         return trangThai;
     }
 
+    public int getAccountId() {
+        return accountId;
+    }
+
     // Setters
     public void setMaKh(int maKh) {
         this.maKh = maKh;
@@ -65,5 +71,9 @@ public class Customer {
 
     public void setTrangThai(String trangThai) {
         this.trangThai = trangThai;
+    }
+
+    public void setAccountId(int accountId) {
+        this.accountId = accountId;
     }
 }
