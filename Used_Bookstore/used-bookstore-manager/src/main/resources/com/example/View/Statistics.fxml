@@ -17,7 +17,7 @@
                        style="-fx-font-size: 22px; -fx-font-weight: bold;"/>
                 <Region HBox.hgrow="ALWAYS"/>
                 <HBox spacing="15" alignment="CENTER_RIGHT">
-                    <Button text="📈 Xuất Excel" onAction="#handleExportPDF"
+                    <Button text="📈 Xuất Excel" onAction="#handleExportExcel"
                             style="-fx-background-color: #28a745; -fx-text-fill: white; -fx-font-weight: bold;
                                    -fx-padding: 10 20; -fx-background-radius: 25; -fx-border-radius: 25;
                                    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 5, 0, 0, 2); -fx-cursor: hand;"/>
