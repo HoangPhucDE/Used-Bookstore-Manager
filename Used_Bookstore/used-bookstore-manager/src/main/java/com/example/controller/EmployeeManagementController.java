@@ -3,6 +3,7 @@ package com.example.controller;
 import com.example.controller.dao.AccountDao;
 import com.example.controller.dao.EmployeeDao;
 import com.example.model.Employee;
+import com.example.utils.ValidationUtils;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
@@ -135,7 +136,7 @@ public class EmployeeManagementController {
             String role = roleBox.getValue();
             java.time.LocalDate dob = dobPicker.getValue();
 
-            // Kiểm tra đầu vào
+            // 1. Kiểm tra rỗng
             if (name.isEmpty() || email.isEmpty() || phone.isEmpty()
                     || username.isEmpty() || password.isEmpty() || dob == null) {
                 showAlert("Lỗi", "Vui lòng nhập đầy đủ thông tin.");
@@ -143,21 +144,43 @@ public class EmployeeManagementController {
                 return;
             }
 
-            if (!email.matches("^[\\w.-]+@[\\w.-]+\\.\\w+$")) {
+            // 2. Kiểm tra định dạng
+            if (!ValidationUtils.isValidEmail(email)) {
                 showAlert("Lỗi", "Email không hợp lệ.");
                 emailField.requestFocus();
                 event.consume();
                 return;
             }
 
-            if (!phone.matches("\\d{9,11}")) {
-                showAlert("Lỗi", "SĐT phải từ 9 đến 11 chữ số.");
+            if (!ValidationUtils.isValidPhone(phone)) {
+                showAlert("Lỗi", "SĐT phải có 10 chữ số và bắt đầu bằng 0.");
                 phoneField.requestFocus();
                 event.consume();
                 return;
             }
 
-            // Xác nhận trước khi thêm
+            if (!ValidationUtils.isValidUsername(username)) {
+                showAlert("Lỗi", "Username phải từ 4 ký tự trở lên.");
+                usernameField.requestFocus();
+                event.consume();
+                return;
+            }
+
+            if (!ValidationUtils.isValidPassword(password)) {
+                showAlert("Lỗi", "Mật khẩu phải từ 6 ký tự trở lên.");
+                passwordField.requestFocus();
+                event.consume();
+                return;
+            }
+
+            if (!ValidationUtils.isValidDateOfBirth(dob)) {
+                showAlert("Lỗi", "Ngày sinh không hợp lệ.");
+                dobPicker.requestFocus();
+                event.consume();
+                return;
+            }
+
+            // 3. Xác nhận thêm
             Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
             confirm.setTitle("Xác nhận thêm");
             confirm.setHeaderText("Bạn có chắc muốn thêm nhân viên?");
@@ -170,13 +193,14 @@ public class EmployeeManagementController {
             try {
                 AccountDao accountDao = new AccountDao();
 
-                // Kiểm tra username/email đã tồn tại
+                // 4. Kiểm tra trùng
                 if (accountDao.findAccountIdByUsername(username) != null) {
                     showAlert("Lỗi", "Username đã tồn tại. Hãy chọn tên khác.");
                     usernameField.requestFocus();
                     event.consume();
                     return;
                 }
+
                 if (accountDao.isEmailExists(email)) {
                     showAlert("Lỗi", "Email đã tồn tại. Hãy chọn email khác.");
                     emailField.requestFocus();
@@ -184,11 +208,10 @@ public class EmployeeManagementController {
                     return;
                 }
 
-                // Tạo tài khoản
+                // 5. Tạo tài khoản + nhân viên
                 int accId = employeeDao.createAccount(username, password, role, email);
                 if (accId == -1) throw new Exception("Không thể tạo tài khoản.");
 
-                // Tạo nhân viên
                 Employee emp = new Employee(null, name, email, phone, role);
                 int empId = employeeDao.addEmployee(emp, Date.valueOf(dob), accId);
                 if (empId != -1) {
@@ -203,6 +226,7 @@ public class EmployeeManagementController {
                 event.consume();
             }
         });
+
 
         // Xác nhận nếu Cancel khi đã nhập dữ liệu
         dialog.setOnCloseRequest(evt -> {
