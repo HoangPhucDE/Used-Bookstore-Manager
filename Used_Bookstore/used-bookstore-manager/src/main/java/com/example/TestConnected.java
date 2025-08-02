@@ -1,5 +1,5 @@
 package com.example;
-
+import com.example.DatabaseConnection;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -10,7 +10,7 @@ public class TestConnected {
         String username = "admin_quyen";
         String password = "123456@Admin";  // Giả sử chưa mã hóa
 
-        try (Connection conn = DataBaseConnection.DatabaseConnection.getConnection()) {
+        try (Connection conn = DatabaseConnection.getConnection()) {
             String sql = "SELECT * FROM taikhoan WHERE username = ? AND mat_khau = ?";
             PreparedStatement ps = conn.prepareStatement(sql);
             ps.setString(1, username);

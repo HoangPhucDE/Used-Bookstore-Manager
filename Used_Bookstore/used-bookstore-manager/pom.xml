@@ -55,6 +55,12 @@
             <version>${javafx.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>com.itextpdf</groupId>
+            <artifactId>itextpdf</artifactId>
+            <version>5.5.13.3</version>
+        </dependency>
+
         <!-- JDBC -->
         <dependency>
             <groupId>com.mysql</groupId>
@@ -74,7 +80,7 @@
                     <mainClass>com.example.Main</mainClass>
 
                     --module-path
-                    "C:\Library\javafx-sdk-24.0.2\lib"
+                    "D:\Library\javafx-sdk-21.0.8\lib"
                     --add-modules
                     javafx.controls,javafx.fxml
 

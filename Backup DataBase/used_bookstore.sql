@@ -9,7 +9,8 @@ CREATE TABLE taikhoan (
     vai_tro ENUM('admin', 'user', 'khach') NOT NULL,
     loai_nguoi_dung ENUM('nhanvien', 'khachhang') NOT NULL,
     email VARCHAR(100) NOT NULL UNIQUE,
-    trang_thai BOOLEAN NOT NULL DEFAULT TRUE
+    trang_thai BOOLEAN NOT NULL DEFAULT TRUE,
+    ngay_dang_ky DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
 -- 2. Bảng nhân viên
@@ -46,7 +47,9 @@ CREATE TABLE sach (
     gia_nhap DOUBLE NOT NULL CHECK (gia_nhap >= 0),
     gia_ban DOUBLE NOT NULL CHECK (gia_ban >= 0),
     tinh_trang ENUM('moi', 'cu', 'tot', 'trung_binh', 'kem') DEFAULT 'cu',
-    hinh_anh TEXT
+    hinh_anh TEXT,
+    so_luong_ton INT NOT NULL DEFAULT 0 CHECK (so_luong_ton >= 0),
+    danh_gia DOUBLE DEFAULT 0 CHECK (danh_gia BETWEEN 0 AND 5) 
 );
 
 -- 5. Bảng giỏ hàng
@@ -89,14 +92,14 @@ CREATE TABLE chitiet_donhang (
 USE Used_Bookstore;
 
 -- 1. Tài khoản
-INSERT INTO taikhoan (username, mat_khau, vai_tro, loai_nguoi_dung, email, trang_thai) VALUES
-('admin_quyen', '123456@Admin', 'admin', 'nhanvien', 'quyen.admin@example.com', TRUE),
-('leminh_nhanvien', '123456@Nv', 'user', 'nhanvien', 'leminh.tuan@example.com', TRUE),
-('trananh_1990', '123456@Khach', 'khach', 'khachhang', 'anhdung.tran@gmail.com', TRUE),
-('phamhoa_admin', 'hoa123@Admin', 'admin', 'nhanvien', 'phamhoa@example.com', TRUE),
-('phuocnv', 'phuoc123@Nv', 'user', 'nhanvien', 'phuoc.nv@example.com', TRUE),
-('vananh_khach', 'vananh123@Khach', 'khach', 'khachhang', 'vananh.kh@example.com', TRUE),
-('tuananh_khach', 'tuananh123@Khach', 'khach', 'khachhang', 'tuananh.kh@example.com', TRUE);
+INSERT INTO taikhoan (username, mat_khau, vai_tro, loai_nguoi_dung, email, trang_thai, ngay_dang_ky) VALUES
+('admin_quyen', '123456@Admin', 'admin', 'nhanvien', 'quyen.admin@example.com', TRUE, NOW()),
+('leminh_nhanvien', '123456@Nv', 'user', 'nhanvien', 'leminh.tuan@example.com', TRUE, NOW()),
+('trananh_1990', '123456@Khach', 'khach', 'khachhang', 'anhdung.tran@gmail.com', TRUE, NOW()),
+('phamhoa_admin', 'hoa123@Admin', 'admin', 'nhanvien', 'phamhoa@example.com', TRUE, NOW()),
+('phuocnv', 'phuoc123@Nv', 'user', 'nhanvien', 'phuoc.nv@example.com', TRUE, NOW()),
+('vananh_khach', 'vananh123@Khach', 'khach', 'khachhang', 'vananh.kh@example.com', TRUE, NOW()),
+('tuananh_khach', 'tuananh123@Khach', 'khach', 'khachhang', 'tuananh.kh@example.com', TRUE, NOW());
 
 -- 2. Nhân viên
 INSERT INTO nhanvien (ho_ten, ngay_sinh, sdt, chuc_vu, trang_thai, id_taikhoan) VALUES
@@ -112,15 +115,24 @@ INSERT INTO khachhang (ho_ten, email, sdt, dia_chi, id_taikhoan) VALUES
 ('Đỗ Tuấn Anh', 'tuananh.kh@example.com', '0911444555', '88 Lý Thường Kiệt, Q.10, TP.HCM', 7);
 
 -- 4. Sách
-INSERT INTO sach (ten_sach, tac_gia, the_loai, nxb, nam_xb, gia_nhap, gia_ban, tinh_trang, hinh_anh) VALUES
-('Dám Nghĩ Lớn', 'David J. Schwartz', 'Phát triển bản thân', 'NXB Trẻ', 2021, 50000, 85000, 'tot', NULL),
-('Nhà Giả Kim', 'Paulo Coelho', 'Tiểu thuyết', 'NXB Văn Học', 2019, 60000, 95000, 'cu', NULL),
-('Lập Trình Python Cơ Bản', 'Nguyễn Văn Long', 'Giáo trình', 'NXB Lao Động', 2022, 80000, 120000, 'moi', NULL),
-('Tư Duy Nhanh Và Chậm', 'Daniel Kahneman', 'Tâm lý học', 'NXB Thế Giới', 2020, 85000, 135000, 'moi', NULL),
-('Tuổi Trẻ Đáng Giá Bao Nhiêu', 'Rosie Nguyễn', 'Phát triển bản thân', 'NXB Trẻ', 2019, 50000, 88000, 'cu', NULL),
-('Muôn Kiếp Nhân Sinh', 'Nguyên Phong', 'Tâm linh', 'NXB Tổng Hợp', 2021, 70000, 120000, 'tot', NULL),
-('Sherlock Holmes Toàn Tập', 'Arthur Conan Doyle', 'Trinh thám', 'NXB Văn Học', 2022, 90000, 150000, 'moi', NULL),
-('Lược Sử Thời Gian', 'Stephen Hawking', 'Khoa học', 'NXB Trẻ', 2018, 95000, 160000, 'moi', NULL);
+INSERT INTO sach (
+    ten_sach, tac_gia, the_loai, nxb, nam_xb, gia_nhap, gia_ban, tinh_trang, hinh_anh, so_luong_ton, danh_gia
+) VALUES
+('Dám Nghĩ Lớn', 'David J. Schwartz', 'Phát triển bản thân', 'NXB Trẻ', 2021, 50000, 85000, 'tot', NULL, 10, 4.6),
+('Nhà Giả Kim', 'Paulo Coelho', 'Tiểu thuyết', 'NXB Văn Học', 2019, 60000, 95000, 'cu', NULL, 5, 4.8),
+('Lập Trình Python Cơ Bản', 'Nguyễn Văn Long', 'Giáo trình', 'NXB Lao Động', 2022, 80000, 120000, 'moi', NULL, 15, 4.5),
+('Tư Duy Nhanh Và Chậm', 'Daniel Kahneman', 'Tâm lý học', 'NXB Thế Giới', 2020, 85000, 135000, 'moi', NULL, 8, 4.7),
+('Tuổi Trẻ Đáng Giá Bao Nhiêu', 'Rosie Nguyễn', 'Phát triển bản thân', 'NXB Trẻ', 2019, 50000, 88000, 'cu', NULL, 12, 4.4),
+('Muôn Kiếp Nhân Sinh', 'Nguyên Phong', 'Tâm linh', 'NXB Tổng Hợp', 2021, 70000, 120000, 'tot', NULL, 20, 4.9),
+('Sherlock Holmes Toàn Tập', 'Arthur Conan Doyle', 'Trinh thám', 'NXB Văn Học', 2022, 90000, 150000, 'moi', NULL, 7, 4.8),
+('Lược Sử Thời Gian', 'Stephen Hawking', 'Khoa học', 'NXB Trẻ', 2018, 95000, 160000, 'moi', NULL, 9, 4.6),
+('Đắc Nhân Tâm', 'Dale Carnegie', 'Phát triển bản thân', 'NXB Tổng Hợp', 2020, 60000, 100000, 'tot', NULL, 14, 4.9),
+('Thiên Tài Bên Trái, Kẻ Điên Bên Phải', 'Dương Chí Thành', 'Tâm lý học', 'NXB Lao Động', 2019, 75000, 110000, 'cu', NULL, 6, 4.7),
+('Homo Deus: Lược Sử Tương Lai', 'Yuval Noah Harari', 'Khoa học xã hội', 'NXB Thế Giới', 2021, 95000, 150000, 'moi', NULL, 10, 4.5),
+('Start With Why', 'Simon Sinek', 'Kinh doanh', 'NXB Trẻ', 2022, 85000, 140000, 'tot', NULL, 13, 4.6),
+('Cà Phê Cùng Tony', 'Tony Buổi Sáng', 'Truyền cảm hứng', 'NXB Trẻ', 2018, 55000, 89000, 'cu', NULL, 11, 4.3),
+('Combo Dạy Con Làm Giàu', 'Robert T. Kiyosaki', 'Kinh tế', 'NXB Trẻ', 2017, 130000, 210000, 'cu', NULL, 5, 4.8),
+('Hành Trình Về Phương Đông', 'Blair T. Spalding', 'Tâm linh', 'NXB Văn Hóa', 2020, 70000, 115000, 'moi', NULL, 9, 4.7);
 
 -- 5. Giỏ hàng
 INSERT INTO giohang (ma_kh, ma_sach, so_luong) VALUES

@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<AnchorPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.example.controller.CustomerManagementController"
+            prefWidth="1000.0" prefHeight="640.0"
+            style="-fx-background-color: #f4f6f8;">
+
+    <!-- Header -->
+    <HBox spacing="10" alignment="CENTER_LEFT"
+          style="-fx-padding: 25 40; -fx-background-color: #ffffff;"
+          AnchorPane.topAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0">
+        <Label text="👥 Quản lý khách hàng"
+               style="-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;" />
+    </HBox>
+
+    <!-- Main content -->
+    <VBox spacing="20" style="-fx-padding: 20 40;"
+          AnchorPane.topAnchor="80" AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0">
+
+        <!-- Bộ lọc & tìm kiếm -->
+        <HBox spacing="12">
+            <TextField fx:id="searchField"
+                       promptText="Tìm theo tên, email hoặc số điện thoại..."
+                       style="-fx-pref-width: 300; -fx-font-size: 13px; -fx-background-radius: 6; -fx-padding: 8;" />
+
+            <ComboBox fx:id="statusFilter" promptText="Lọc trạng thái"
+                      style="-fx-pref-width: 180; -fx-background-radius: 6;" />
+
+            <Button text="Tìm kiếm" onAction="#handleSearch"
+                    style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-background-radius: 6;" />
+
+            <Region HBox.hgrow="ALWAYS" />
+
+            <Button text="+ Thêm khách hàng" onAction="#showAddUserDialog"
+                    style="-fx-background-color: #2ecc71; -fx-text-fill: white; -fx-background-radius: 6;" />
+        </HBox>
+
+        <!-- Bảng khách hàng -->
+        <TableView fx:id="userTable" style="-fx-background-radius: 6;" prefHeight="500">
+            <columns>
+                <TableColumn fx:id="colId" text="ID" prefWidth="50"/>
+                <TableColumn fx:id="colUsername" text="Họ tên" prefWidth="150"/>
+                <TableColumn fx:id="colEmail" text="Email" prefWidth="180"/>
+                <TableColumn fx:id="colRole" text="Số điện thoại" prefWidth="120"/>
+                <TableColumn fx:id="colAddress" text="Địa chỉ" prefWidth="200"/>
+                <TableColumn fx:id="colStatus" text="Trạng thái" prefWidth="100"/>
+                <TableColumn fx:id="colActions" text="Hành động" prefWidth="180"/>
+            </columns>
+        </TableView>
+    </VBox>
+</AnchorPane>

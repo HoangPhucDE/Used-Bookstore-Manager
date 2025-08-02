@@ -1,5 +1,6 @@
 package com.example.controller;
 
+import com.example.DatabaseConnection;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -9,6 +10,7 @@ import javafx.scene.chart.PieChart;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.Label;
 
+import java.sql.*;
 
 public class DashboardController {
 
@@ -33,89 +35,144 @@ public class DashboardController {
     }
 
     private void setupStatistics() {
-        // Mock data cho thống kê tổng quát
-        totalBooksLabel.setText("2,345");
-        totalUsersLabel.setText("567");
-        totalSalesLabel.setText("1,234");
-        totalRevenueLabel.setText("45,678,900 ₫");
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            // Tổng sách
+            ResultSet rs = conn.createStatement().executeQuery("SELECT COUNT(*) FROM sach");
+            if (rs.next()) totalBooksLabel.setText(String.valueOf(rs.getInt(1)));
 
-        // Mock data cho hôm nay
-        todayBooksLabel.setText("23");
-        todayUsersLabel.setText("12");
-        todaySalesLabel.setText("45");
-        todayRevenueLabel.setText("3,456,000 ₫");
+            // Tổng người dùng (chỉ tính khách hàng)
+            rs = conn.createStatement().executeQuery("SELECT COUNT(*) FROM taikhoan WHERE loai_nguoi_dung = 'khachhang'");
+            if (rs.next()) totalUsersLabel.setText(String.valueOf(rs.getInt(1)));
+
+            // Tổng đơn hàng
+            rs = conn.createStatement().executeQuery("SELECT COUNT(*) FROM donhang");
+            if (rs.next()) totalSalesLabel.setText(String.valueOf(rs.getInt(1)));
+
+            // Tổng doanh thu
+            rs = conn.createStatement().executeQuery("SELECT SUM(tong_tien) FROM donhang");
+            if (rs.next()) totalRevenueLabel.setText(String.format("%,d ₫", rs.getInt(1)));
+
+            // Đơn hôm nay
+            rs = conn.createStatement().executeQuery("SELECT COUNT(*), SUM(tong_tien) FROM donhang WHERE DATE(ngay_tao) = CURRENT_DATE");
+            if (rs.next()) {
+                todaySalesLabel.setText(String.valueOf(rs.getInt(1)));
+                todayRevenueLabel.setText(String.format("%,d ₫", rs.getInt(2)));
+            }
+
+            // Sách bán hôm nay
+            rs = conn.createStatement().executeQuery("""
+                SELECT SUM(so_luong) FROM chitiet_donhang ct
+                JOIN donhang dh ON ct.ma_don = dh.ma_don
+                WHERE DATE(dh.ngay_tao) = CURRENT_DATE
+            """);
+            if (rs.next()) todayBooksLabel.setText(String.valueOf(rs.getInt(1)));
+
+            // Người dùng mới hôm nay (giả định đã có cột ngay_dang_ky)
+            rs = conn.createStatement().executeQuery("SELECT COUNT(*) FROM taikhoan WHERE DATE(ngay_dang_ky) = CURRENT_DATE");
+            if (rs.next()) todayUsersLabel.setText(String.valueOf(rs.getInt(1)));
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 
     private void setupCategoryChart() {
-        if (categoryChart != null) {
-            ObservableList<PieChart.Data> pieChartData = FXCollections.observableArrayList(
-                new PieChart.Data("Tiểu thuyết", 35),
-                new PieChart.Data("Giáo trình", 25),
-                new PieChart.Data("Kỹ năng sống", 20),
-                new PieChart.Data("Khoa học", 15),
-                new PieChart.Data("Khác", 5)
-            );
+        ObservableList<PieChart.Data> pieChartData = FXCollections.observableArrayList();
+        String sql = "SELECT the_loai, COUNT(*) AS so_luong FROM sach GROUP BY the_loai";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+
+            while (rs.next()) {
+                pieChartData.add(new PieChart.Data(rs.getString("the_loai"), rs.getInt("so_luong")));
+            }
+
             categoryChart.setData(pieChartData);
             categoryChart.setTitle("Phân bố sách theo thể loại");
+
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
     }
 
     private void setupRevenueChart() {
-        if (revenueChart != null) {
-            XYChart.Series<String, Number> series = new XYChart.Series<>();
-            series.setName("Doanh thu");
+        XYChart.Series<String, Number> series = new XYChart.Series<>();
+        series.setName("Doanh thu");
 
-            series.getData().add(new XYChart.Data<>("T1", 2500000));
-            series.getData().add(new XYChart.Data<>("T2", 3200000));
-            series.getData().add(new XYChart.Data<>("T3", 2800000));
-            series.getData().add(new XYChart.Data<>("T4", 4100000));
-            series.getData().add(new XYChart.Data<>("T5", 3600000));
-            series.getData().add(new XYChart.Data<>("T6", 4500000));
-            series.getData().add(new XYChart.Data<>("T7", 3900000));
+        String sql = """
+            SELECT DATE(ngay_tao) AS ngay, SUM(tong_tien) AS doanh_thu
+            FROM donhang
+            WHERE ngay_tao >= CURRENT_DATE - INTERVAL 6 DAY
+            GROUP BY DATE(ngay_tao)
+            ORDER BY ngay ASC
+        """;
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+
+            while (rs.next()) {
+                String date = rs.getString("ngay");
+                int revenue = rs.getInt("doanh_thu");
+                series.getData().add(new XYChart.Data<>(date, revenue));
+            }
 
             revenueChart.getData().clear();
             revenueChart.getData().add(series);
             revenueChart.setTitle("Doanh thu 7 ngày qua");
+
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
     }
 
     private void setupBookChart() {
-        if (bookChart != null) {
-            XYChart.Series<String, Number> series = new XYChart.Series<>();
-            series.setName("Số lượng bán");
+        XYChart.Series<String, Number> series = new XYChart.Series<>();
+        series.setName("Số lượng bán");
 
-            series.getData().add(new XYChart.Data<>("Đắc nhân tâm", 45));
-            series.getData().add(new XYChart.Data<>("Harry Potter", 38));
-            series.getData().add(new XYChart.Data<>("Lập trình Java", 32));
-            series.getData().add(new XYChart.Data<>("Tư duy nhanh chậm", 28));
-            series.getData().add(new XYChart.Data<>("Nhà giả kim", 25));
+        String sql = """
+            SELECT s.ten_sach, SUM(ct.so_luong) AS tong
+            FROM chitiet_donhang ct
+            JOIN sach s ON ct.ma_sach = s.ma_sach
+            GROUP BY s.ten_sach
+            ORDER BY tong DESC
+            LIMIT 5
+        """;
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+
+            while (rs.next()) {
+                series.getData().add(new XYChart.Data<>(rs.getString("ten_sach"), rs.getInt("tong")));
+            }
 
             bookChart.getData().clear();
             bookChart.getData().add(series);
             bookChart.setTitle("Top 5 sách bán chạy");
+
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
     }
 
     @FXML
     private void refreshDashboard() {
-        // Làm mới dữ liệu dashboard
         setupStatistics();
         setupCategoryChart();
         setupRevenueChart();
         setupBookChart();
-
         System.out.println("Dashboard đã được làm mới!");
     }
 
     @FXML
     private void exportReport() {
-        // Xuất báo cáo
         System.out.println("Xuất báo cáo thống kê...");
     }
 
     @FXML
     private void viewDetailedStats() {
-        // Xem thống kê chi tiết
         System.out.println("Chuyển đến trang thống kê chi tiết...");
     }
 }

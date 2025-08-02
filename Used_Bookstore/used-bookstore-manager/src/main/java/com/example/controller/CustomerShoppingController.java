@@ -89,6 +89,7 @@ public class CustomerShoppingController {
         showProducts(allProducts);
     }
 
+
     private void filterByCategory() {
         String selectedCategory = categoryComboBox.getValue();
         if (selectedCategory.equals("Tất cả")) {

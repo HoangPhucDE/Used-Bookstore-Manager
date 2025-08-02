@@ -1,75 +1,250 @@
 package com.example.controller;
 
+import com.example.DatabaseConnection;
+import com.example.model.RevenueByDate;
 import com.example.model.RevenueByBook;
 import com.example.model.RevenueByEmployee;
-import com.example.model.RevenueByTime;
+import com.itextpdf.text.*;
+import com.itextpdf.text.pdf.BaseFont;
+import com.itextpdf.text.pdf.PdfPCell;
+import com.itextpdf.text.pdf.PdfPTable;
+import com.itextpdf.text.pdf.PdfWriter;
+import javafx.beans.property.SimpleDoubleProperty;
+import javafx.beans.property.SimpleIntegerProperty;
+import javafx.beans.property.SimpleObjectProperty;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
-import javafx.collections.FXCollections;
+import javafx.stage.FileChooser;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.sql.*;
 import java.time.LocalDate;
-import java.util.List;
 
 public class StatisticsController {
 
-    @FXML private TableView<RevenueByTime> timeTable;
-    @FXML private TableColumn<RevenueByTime, LocalDate> dateCol;
-    @FXML private TableColumn<RevenueByTime, Double> revenueCol;
+    // === 📅 Theo thời gian ===
+    @FXML private TableView<RevenueByDate> timeTable;
+    @FXML private TableColumn<RevenueByDate, LocalDate> dateCol;
+    @FXML private TableColumn<RevenueByDate, Integer> invoiceCountCol;
+    @FXML private TableColumn<RevenueByDate, Double> totalRevenueCol;
 
+    // === 📚 Theo sản phẩm ===
     @FXML private TableView<RevenueByBook> bookTable;
     @FXML private TableColumn<RevenueByBook, String> bookNameCol;
     @FXML private TableColumn<RevenueByBook, Integer> quantityCol;
 
+    // === 👥 Theo nhân viên ===
     @FXML private TableView<RevenueByEmployee> employeeTable;
     @FXML private TableColumn<RevenueByEmployee, String> employeeNameCol;
     @FXML private TableColumn<RevenueByEmployee, Double> employeeRevenueCol;
-    @FXML private TableColumn<RevenueByEmployee, Integer> invoiceCountCol;
+    @FXML private TableColumn<RevenueByEmployee, Integer> employeeInvoiceCol;
+
+    // Dữ liệu
+    private final ObservableList<RevenueByDate> revenueByDateList = FXCollections.observableArrayList();
+    private final ObservableList<RevenueByBook> revenueByBookList = FXCollections.observableArrayList();
+    private final ObservableList<RevenueByEmployee> revenueByEmployeeList = FXCollections.observableArrayList();
 
     @FXML
     public void initialize() {
-        // Mapping table columns
-        dateCol.setCellValueFactory(cell -> new javafx.beans.property.SimpleObjectProperty<>(cell.getValue().getDate()));
-        revenueCol.setCellValueFactory(cell -> new javafx.beans.property.SimpleObjectProperty<>(cell.getValue().getRevenue()));
+        // === Setup cột bảng "Theo thời gian"
+        dateCol.setCellValueFactory(data -> new SimpleObjectProperty<>(data.getValue().getDate()));
+        invoiceCountCol.setCellValueFactory(data -> new SimpleIntegerProperty(data.getValue().getInvoiceCount()).asObject());
+        totalRevenueCol.setCellValueFactory(data -> new SimpleDoubleProperty(data.getValue().getTotalRevenue()).asObject());
 
-        bookNameCol.setCellValueFactory(cell -> new javafx.beans.property.SimpleStringProperty(cell.getValue().getBookName()));
-        quantityCol.setCellValueFactory(cell -> new javafx.beans.property.SimpleObjectProperty<>(cell.getValue().getQuantity()));
+        // === Setup cột bảng "Theo sản phẩm"
+        bookNameCol.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getBookName()));
+        quantityCol.setCellValueFactory(data -> new SimpleIntegerProperty(data.getValue().getQuantity()).asObject());
 
-        employeeNameCol.setCellValueFactory(cell -> new javafx.beans.property.SimpleStringProperty(cell.getValue().getEmployeeName()));
-        employeeRevenueCol.setCellValueFactory(cell -> new javafx.beans.property.SimpleObjectProperty<>(cell.getValue().getRevenue()));
-        invoiceCountCol.setCellValueFactory(cell -> new javafx.beans.property.SimpleObjectProperty<>(cell.getValue().getInvoiceCount()));
+        // === Setup cột bảng "Theo nhân viên"
+        employeeNameCol.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getEmployeeName()));
+        employeeRevenueCol.setCellValueFactory(data -> new SimpleDoubleProperty(data.getValue().getRevenue()).asObject());
+        employeeInvoiceCol.setCellValueFactory(data -> new SimpleIntegerProperty(data.getValue().getInvoiceCount()).asObject());
 
-        loadMockData();
+        loadRevenueByDate();
+        loadRevenueByBook();
+        loadRevenueByEmployee();
     }
 
-    private void loadMockData() {
-        timeTable.setItems(FXCollections.observableArrayList(
-                new RevenueByTime(LocalDate.of(2024, 7, 19), 1_500_000),
-                new RevenueByTime(LocalDate.of(2024, 7, 20), 2_200_000),
-                new RevenueByTime(LocalDate.of(2024, 7, 21), 3_100_000)
-        ));
+    private void loadRevenueByDate() {
+        revenueByDateList.clear();
+        String sql = """
+            SELECT DATE(ngay_tao) AS ngay, COUNT(*) AS so_hoa_don, SUM(tong_tien) AS tong_tien
+            FROM donhang
+            WHERE trang_thai = 'hoan_thanh'
+            GROUP BY DATE(ngay_tao)
+            ORDER BY ngay DESC;
+        """;
 
-        bookTable.setItems(FXCollections.observableArrayList(
-                new RevenueByBook("Đắc nhân tâm", 120),
-                new RevenueByBook("7 thói quen hiệu quả", 95),
-                new RevenueByBook("Lập trình Java cơ bản", 78)
-        ));
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
 
-        employeeTable.setItems(FXCollections.observableArrayList(
-                new RevenueByEmployee("Nguyễn Văn A", 5_000_000, 25),
-                new RevenueByEmployee("Trần Thị B", 3_500_000, 18),
-                new RevenueByEmployee("Lê Văn C", 4_200_000, 21)
-        ));
+            while (rs.next()) {
+                LocalDate date = rs.getDate("ngay").toLocalDate();
+                int count = rs.getInt("so_hoa_don");
+                double total = rs.getDouble("tong_tien");
+                revenueByDateList.add(new RevenueByDate(date, count, total));
+            }
+
+            timeTable.setItems(revenueByDateList);
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            showAlert("Lỗi", "Không thể tải doanh thu theo ngày.");
+        }
+    }
+
+    private void loadRevenueByBook() {
+        revenueByBookList.clear();
+        String sql = """
+            SELECT s.ten_sach, SUM(ct.so_luong) AS so_luong
+            FROM chitiet_donhang ct
+            JOIN sach s ON ct.ma_sach = s.ma_sach
+            JOIN donhang d ON ct.ma_don = d.ma_don
+            WHERE d.trang_thai = 'hoan_thanh'
+            GROUP BY s.ten_sach
+            ORDER BY so_luong DESC;
+        """;
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+
+            while (rs.next()) {
+                String bookName = rs.getString("ten_sach");
+                int quantity = rs.getInt("so_luong");
+                revenueByBookList.add(new RevenueByBook(bookName, quantity));
+            }
+
+            bookTable.setItems(revenueByBookList);
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            showAlert("Lỗi", "Không thể tải thống kê sách bán chạy.");
+        }
+    }
+
+    private void loadRevenueByEmployee() {
+        revenueByEmployeeList.clear();
+        String sql = """
+                    SELECT nv.ho_ten, COUNT(d.ma_don) AS so_hoa_don, SUM(d.tong_tien) AS tong_tien
+                    FROM donhang d
+                    JOIN taikhoan tk ON d.nguoi_tao_id = tk.id
+                    JOIN nhanvien nv ON tk.id = nv.id_taikhoan
+                    WHERE d.trang_thai = 'hoan_thanh'
+                    GROUP BY nv.ho_ten
+                    ORDER BY tong_tien DESC;
+                """;
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+
+            while (rs.next()) {
+                String name = rs.getString("ho_ten");
+                int invoiceCount = rs.getInt("so_hoa_don");
+                double revenue = rs.getDouble("tong_tien");
+                revenueByEmployeeList.add(new RevenueByEmployee(name, revenue, invoiceCount));
+            }
+
+            employeeTable.setItems(revenueByEmployeeList);
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            showAlert("Lỗi", "Không thể tải thống kê theo nhân viên.");
+        }
     }
 
     @FXML
-    private void handleExportExcel() {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION, "Export Excel (mock) thành công!");
-        alert.showAndWait();
+    public void handleExportPDF() {
+        try {
+            FileChooser fileChooser = new FileChooser();
+            fileChooser.setTitle("Lưu file PDF");
+            fileChooser.setInitialFileName("bao_cao_thong_ke.pdf");
+            fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("PDF files", "*.pdf"));
+            File file = fileChooser.showSaveDialog(null);
+            if (file == null) return;
+
+            Document document = new Document();
+            PdfWriter.getInstance(document, new FileOutputStream(file));
+            document.open();
+
+            BaseFont bf = BaseFont.createFont("Fonts/arial.ttf", BaseFont.IDENTITY_H, BaseFont.EMBEDDED);
+            Font font = new Font(bf, 12);
+            Font titleFont = new Font(bf, 14, Font.BOLD);
+
+            // Doanh thu theo ngày
+            document.add(new Paragraph("📅 DOANH THU THEO NGÀY\n\n", titleFont));
+            PdfPTable dateTable = new PdfPTable(3);
+            dateTable.setWidthPercentage(100);
+            dateTable.setWidths(new float[]{3, 3, 3});
+
+            dateTable.addCell(new PdfPCell(new Phrase("Ngày", font)));
+            dateTable.addCell(new PdfPCell(new Phrase("Số hóa đơn", font)));
+            dateTable.addCell(new PdfPCell(new Phrase("Tổng doanh thu", font)));
+
+            for (RevenueByDate entry : revenueByDateList) {
+                dateTable.addCell(new PdfPCell(new Phrase(entry.getDate().toString(), font)));
+                dateTable.addCell(new PdfPCell(new Phrase(String.valueOf(entry.getInvoiceCount()), font)));
+                dateTable.addCell(new PdfPCell(new Phrase(String.format("%.0f", entry.getTotalRevenue()), font)));
+            }
+
+            document.add(dateTable);
+            document.add(new Paragraph("\n"));
+
+            // === 2. Thống kê sách bán chạy ===
+            document.add(new Paragraph("📚 SÁCH BÁN CHẠY\n\n", titleFont));
+            PdfPTable bookTable = new PdfPTable(2);
+            bookTable.setWidthPercentage(100);
+            bookTable.setWidths(new float[]{4, 2});
+
+            bookTable.addCell(new PdfPCell(new Phrase("Tên sách", font)));
+            bookTable.addCell(new PdfPCell(new Phrase("Số lượng bán", font)));
+
+            for (RevenueByBook book : revenueByBookList) {
+                bookTable.addCell(new PdfPCell(new Phrase(book.getBookName(), font)));
+                bookTable.addCell(new PdfPCell(new Phrase(String.valueOf(book.getQuantity()), font)));
+            }
+
+            document.add(bookTable);
+            document.add(new Paragraph("\n"));
+
+            // === 3. Doanh thu theo nhân viên ===
+            document.add(new Paragraph("👥 DOANH THU THEO NHÂN VIÊN\n\n", titleFont));
+            PdfPTable empTable = new PdfPTable(3);
+            empTable.setWidthPercentage(100);
+            empTable.setWidths(new float[]{4, 2, 3});
+
+            empTable.addCell(new PdfPCell(new Phrase("Tên nhân viên", font)));
+            empTable.addCell(new PdfPCell(new Phrase("Số hóa đơn", font)));
+            empTable.addCell(new PdfPCell(new Phrase("Tổng doanh thu", font)));
+
+            for (RevenueByEmployee emp : revenueByEmployeeList) {
+                empTable.addCell(new PdfPCell(new Phrase(emp.getEmployeeName(), font)));
+                empTable.addCell(new PdfPCell(new Phrase(String.valueOf(emp.getInvoiceCount()), font)));
+                empTable.addCell(new PdfPCell(new Phrase(String.format("%.0f", emp.getRevenue()), font)));
+            }
+
+            document.add(empTable);
+            document.close();
+
+            showAlert("Thành công", "Xuất PDF toàn bộ thống kê thành công!");
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            showAlert("Lỗi", "Xuất PDF thất bại.");
+        }
     }
 
-    @FXML
-    private void handleExportPDF() {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION, "Export PDF (mock) thành công!");
+    private void showAlert(String title, String content) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(content);
         alert.showAndWait();
     }
 }
