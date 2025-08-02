@@ -12,7 +12,7 @@ import com.example.model.OrderItem;
 import com.example.controller.dao.CustomerAccountService;
 import com.example.utils.BookDialogUtil;
 import com.example.utils.PdfExportUtils;
-
+import com.example.utils.ValidationUtils;
 
 import com.example.DatabaseConnection;
 import javafx.collections.FXCollections;
@@ -240,6 +240,11 @@ public class SalesController {
             return;
         }
 
+        if (!ValidationUtils.isValidPhone(phone)) {
+            showError("Số điện thoại phải có 10 chữ số và bắt đầu bằng số 0.");
+            return;
+        }
+
         // Người bán (đang đăng nhập)
         int createdById = LoginController.currentUserId;
 
@@ -329,7 +334,7 @@ public class SalesController {
 
     private void autoFillCustomerInfo() {
         String phone = phoneField.getText().trim();
-        if (!phone.matches("\\d{10}")) return;
+        if (!ValidationUtils.isValidPhone(phone)) return;
 
         Customer customer = customerDao.findCustomerByPhone(phone);
         if (customer != null) {
