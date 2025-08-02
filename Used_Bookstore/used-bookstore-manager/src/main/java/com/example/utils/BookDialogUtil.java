@@ -1,4 +1,4 @@
-package com.example.util;
+package com.example.utils;
 
 import com.example.model.Book;
 import javafx.scene.control.*;

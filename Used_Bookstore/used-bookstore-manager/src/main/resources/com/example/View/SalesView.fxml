@@ -62,7 +62,8 @@
                     <Label text="📞 Số điện thoại:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
                     <TextField fx:id="phoneField" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
 
-                    <Label text="✉️ Email:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+                    <Label text="📧 Email:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+
                     <TextField fx:id="emailField" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
 
                     <Label text="🏠 Địa chỉ:" GridPane.rowIndex="3" GridPane.columnIndex="0"/>

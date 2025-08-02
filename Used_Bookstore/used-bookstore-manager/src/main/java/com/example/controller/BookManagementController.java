@@ -22,18 +22,30 @@ import java.sql.*;
 
 public class BookManagementController {
 
-    @FXML private TextField searchField;
-    @FXML private TableView<Book> bookTable;
-    @FXML private TableColumn<Book, Integer> colId;
-    @FXML private TableColumn<Book, String> colTitle;
-    @FXML private TableColumn<Book, String> colAuthor;
-    @FXML private TableColumn<Book, String> colCategory;
-    @FXML private TableColumn<Book, Double> colImportPrice;  // ✅ Giá nhập
-    @FXML private TableColumn<Book, Double> colPrice;
-    @FXML private TableColumn<Book, Integer> colStock;
-    @FXML private TableColumn<Book, Double> colRating;
-    @FXML private TableColumn<Book, Void> colActions;
-    @FXML private Button addBookBtn;
+    @FXML
+    private TextField searchField;
+    @FXML
+    private TableView<Book> bookTable;
+    @FXML
+    private TableColumn<Book, Integer> colId;
+    @FXML
+    private TableColumn<Book, String> colTitle;
+    @FXML
+    private TableColumn<Book, String> colAuthor;
+    @FXML
+    private TableColumn<Book, String> colCategory;
+    @FXML
+    private TableColumn<Book, Double> colImportPrice; // ✅ Giá nhập
+    @FXML
+    private TableColumn<Book, Double> colPrice;
+    @FXML
+    private TableColumn<Book, Integer> colStock;
+    @FXML
+    private TableColumn<Book, Double> colRating;
+    @FXML
+    private TableColumn<Book, Void> colActions;
+    @FXML
+    private Button addBookBtn;
 
     private final ObservableList<Book> bookList = FXCollections.observableArrayList();
 
@@ -64,7 +76,7 @@ public class BookManagementController {
     private void loadBooksFromDatabase() {
         bookList.clear();
         try (Connection conn = DatabaseConnection.getConnection();
-             ResultSet rs = conn.createStatement().executeQuery("SELECT * FROM sach")) {
+                ResultSet rs = conn.createStatement().executeQuery("SELECT * FROM sach")) {
 
             while (rs.next()) {
                 bookList.add(new Book(
@@ -79,8 +91,7 @@ public class BookManagementController {
                         rs.getString("tinh_trang"),
                         rs.getInt("so_luong_ton"),
                         rs.getDouble("danh_gia"),
-                        rs.getString("hinh_anh")
-                ));
+                        rs.getString("hinh_anh")));
             }
         } catch (SQLException e) {
             showAlert("Lỗi", "Không thể tải dữ liệu sách: " + e.getMessage());
@@ -166,10 +177,11 @@ public class BookManagementController {
         TextField stock = new TextField();
         TextField rating = new TextField();
         ImageView imgPreview = new ImageView();
-        imgPreview.setFitWidth(100); imgPreview.setFitHeight(120);
+        imgPreview.setFitWidth(100);
+        imgPreview.setFitHeight(120);
 
         Button chooseImg = new Button("Chọn ảnh");
-        final String[] imgPath = {null};
+        final String[] imgPath = { null };
 
         chooseImg.setOnAction(e -> {
             FileChooser fc = new FileChooser();
@@ -201,7 +213,8 @@ public class BookManagementController {
         }
 
         GridPane grid = new GridPane();
-        grid.setHgap(10); grid.setVgap(10);
+        grid.setHgap(10);
+        grid.setVgap(10);
         grid.addRow(0, new Label("Tên sách:"), title);
         grid.addRow(1, new Label("Tác giả:"), author);
         grid.addRow(2, new Label("Thể loại:"), category);
@@ -237,12 +250,20 @@ public class BookManagementController {
                     return new Book(
                             bookToEdit != null ? bookToEdit.getId() : 0,
                             title.getText(), author.getText(), category.getText(),
-                            "", 0, giaNhap, giaBan, "", tonKho, dg, imgPath[0]
-                    );
+                            "", 0, giaNhap, giaBan, "", tonKho, dg, imgPath[0]);
                 } catch (Exception ex) {
-                    showAlert("Lỗi nhập liệu", ex.getMessage());
+                    String message;
+                    if (ex instanceof NumberFormatException) {
+                        message = "Số lượng phải là số nguyên!";
+                    } else if (ex instanceof NullPointerException) {
+                        message = "Thiếu dữ liệu bắt buộc!";
+                    } else {
+                        message = "Đã xảy ra lỗi: " + ex.getMessage();
+                    }
+                    showAlert("Lỗi nhập liệu", message);
                     return null;
                 }
+
             }
             return null;
         });
@@ -262,13 +283,16 @@ public class BookManagementController {
         dialog.getDialogPane().getButtonTypes().add(ButtonType.CLOSE);
 
         GridPane grid = new GridPane();
-        grid.setHgap(10); grid.setVgap(10);
+        grid.setHgap(10);
+        grid.setVgap(10);
         ImageView img = new ImageView();
         if (book.getImagePath() != null) {
             File file = new File("images", book.getImagePath());
-            if (file.exists()) img.setImage(new Image(file.toURI().toString()));
+            if (file.exists())
+                img.setImage(new Image(file.toURI().toString()));
         }
-        img.setFitHeight(140); img.setFitWidth(100);
+        img.setFitHeight(140);
+        img.setFitWidth(100);
 
         grid.addRow(0, new Label("Tên sách:"), new Label(book.getTitle()));
         grid.addRow(1, new Label("Tác giả:"), new Label(book.getAuthor()));
@@ -286,7 +310,7 @@ public class BookManagementController {
     private void insertBookToDB(Book b) {
         String sql = "INSERT INTO sach (ten_sach, tac_gia, the_loai, gia_nhap, gia_ban, so_luong_ton, danh_gia, hinh_anh) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
         try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, b.getTitle());
             stmt.setString(2, b.getAuthor());
             stmt.setString(3, b.getCategory());
@@ -304,7 +328,7 @@ public class BookManagementController {
     private void updateBookInDB(Book b) {
         String sql = "UPDATE sach SET ten_sach=?, tac_gia=?, the_loai=?, gia_nhap=?, gia_ban=?, so_luong_ton=?, danh_gia=?, hinh_anh=? WHERE ma_sach=?";
         try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, b.getTitle());
             stmt.setString(2, b.getAuthor());
             stmt.setString(3, b.getCategory());
@@ -322,7 +346,7 @@ public class BookManagementController {
 
     private void deleteBookFromDB(int id) {
         try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement("DELETE FROM sach WHERE ma_sach = ?")) {
+                PreparedStatement stmt = conn.prepareStatement("DELETE FROM sach WHERE ma_sach = ?")) {
             stmt.setInt(1, id);
             stmt.executeUpdate();
         } catch (SQLException e) {

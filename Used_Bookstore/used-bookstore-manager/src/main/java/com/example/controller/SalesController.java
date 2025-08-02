@@ -66,7 +66,7 @@ public class SalesController {
                             .orElse(null);
 
                     if (selectedBook != null) {
-                        com.example.util.BookDialogUtil.showBookDetails(selectedBook);
+                        com.example.utils.BookDialogUtil.showBookDetails(selectedBook);
                     } else {
                         showAlert("Thông báo", "Không tìm thấy chi tiết sách.");
                     }

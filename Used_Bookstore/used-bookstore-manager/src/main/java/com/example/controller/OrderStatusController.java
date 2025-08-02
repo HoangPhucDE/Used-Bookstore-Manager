@@ -6,7 +6,7 @@ import com.example.controller.dao.OrderItemDao;
 import com.example.model.Book;
 import com.example.model.Order;
 import com.example.model.OrderItem;
-import com.example.util.BookDialogUtil;
+import com.example.utils.BookDialogUtil;
 import com.example.utils.OrderItemTableBuilder;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.collections.FXCollections;
