@@ -1,6 +1,6 @@
 package com.example.controller.statistcs;
 
-import com.example.controller.dao.StatisticsDao;
+import com.dao.StatisticsDao;
 import com.example.model.RevenueByDate;
 import com.example.model.RevenueByBook;
 import com.example.model.RevenueByEmployee;

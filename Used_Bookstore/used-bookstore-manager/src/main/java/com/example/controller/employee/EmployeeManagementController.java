@@ -1,7 +1,7 @@
 package com.example.controller.employee;
 
-import com.example.controller.dao.AccountDao;
-import com.example.controller.dao.EmployeeDao;
+import com.dao.AccountDao;
+import com.dao.EmployeeDao;
 import com.example.model.Employee;
 import com.example.utils.ValidationUtils;
 import javafx.beans.property.ReadOnlyStringWrapper;
@@ -16,7 +16,6 @@ import javafx.scene.layout.HBox;
 
 import java.sql.Date;
 import java.sql.SQLException;
-import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class EmployeeManagementController {

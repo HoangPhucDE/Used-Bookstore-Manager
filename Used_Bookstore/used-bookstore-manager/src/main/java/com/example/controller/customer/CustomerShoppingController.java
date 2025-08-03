@@ -1,8 +1,8 @@
 package com.example.controller.customer;
 
 import com.example.controller.auth.LoginController;
-import com.example.controller.dao.BookDao;
-import com.example.controller.dao.CustomerDao;
+import com.dao.BookDao;
+import com.dao.CustomerDao;
 import com.example.model.Book;
 import com.example.model.Customer;
 import com.example.utils.CurrencyFormatter;

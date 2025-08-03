@@ -1,4 +1,4 @@
-package com.example.controller.dao;
+package com.dao;
 
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;

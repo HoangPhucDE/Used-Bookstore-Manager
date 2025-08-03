@@ -1,8 +1,8 @@
 package com.example.controller.order;
 
-import com.example.controller.dao.BookDao;
-import com.example.controller.dao.OrderDao;
-import com.example.controller.dao.OrderItemDao;
+import com.dao.BookDao;
+import com.dao.OrderDao;
+import com.dao.OrderItemDao;
 import com.example.model.Book;
 import com.example.model.Order;
 import com.example.model.OrderItem;

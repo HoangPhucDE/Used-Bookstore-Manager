@@ -20,6 +20,7 @@ public class HomeController {
     @FXML private BorderPane rootPane;
     @FXML private VBox sidebar;
     @FXML private Label usernameLabel;
+    @FXML private Button stockBtn;
 
     private String role;
     private String username;
@@ -82,6 +83,7 @@ public class HomeController {
         if (salesBtn != null) salesBtn.setStyle(INACTIVE_STYLE);
         if (statsBtn != null) statsBtn.setStyle(INACTIVE_STYLE);
         if (orderStatusBtn != null) orderStatusBtn.setStyle(INACTIVE_STYLE);
+        if (stockBtn != null) stockBtn.setStyle(INACTIVE_STYLE);
     }
 
     @FXML private void goHome()      { setActiveButton(homeBtn); loadPage("/com/example/views/dashboard/Dashboard.fxml"); }
@@ -92,6 +94,7 @@ public class HomeController {
     @FXML private void goStats()     { setActiveButton(statsBtn); loadPage("/com/example/views/statistics/Statistics.fxml"); }
     @FXML private void goOrders()    { setActiveButton(orderStatusBtn); loadPage("/com/example/views/order/OrderStatus.fxml"); }
     @FXML private void goShopping()  { loadPage("/com/example/views/customer/CustomerShopping.fxml"); }
+    @FXML private void goStock()    {setActiveButton(stockBtn); loadPage("/com/example/views/stock/StockManagementView.fxml");}
 
     private void loadPage(String fxmlPath) {
         try {
