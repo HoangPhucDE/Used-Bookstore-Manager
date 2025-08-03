@@ -1,4 +1,4 @@
-package com.example.controller.dao;
+package com.dao;
 
 import com.example.utils.DatabaseConnection;
 import javafx.collections.FXCollections;

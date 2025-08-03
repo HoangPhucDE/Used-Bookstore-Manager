@@ -1,7 +1,7 @@
 package com.example.controller.sales;
 
+import com.dao.*;
 import com.example.controller.auth.LoginController;
-import com.example.controller.dao.*;
 import com.example.model.Book;
 import com.example.model.Customer;
 import com.example.model.OrderItem;
@@ -236,7 +236,7 @@ public class SalesController {
             OrderItemDao orderItemDao = new OrderItemDao();
             orderItemDao.insertOrderItems(conn, orderId, cartItems);
 
-            bookDao.updateStockAfterOrder(conn, cartItems);
+            bookDao.updateStockAfterOrderItems(conn, cartItems, "offline");
 
             conn.commit();
 

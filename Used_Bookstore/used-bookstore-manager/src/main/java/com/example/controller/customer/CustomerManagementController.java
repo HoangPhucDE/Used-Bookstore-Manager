@@ -1,8 +1,8 @@
 package com.example.controller.customer;
 
 import com.example.controller.auth.LoginController;
-import com.example.controller.dao.AccountDao;
-import com.example.controller.dao.CustomerDao;
+import com.dao.AccountDao;
+import com.dao.CustomerDao;
 import com.example.model.Customer;
 import com.example.utils.DatabaseConnection;
 import javafx.collections.ObservableList;

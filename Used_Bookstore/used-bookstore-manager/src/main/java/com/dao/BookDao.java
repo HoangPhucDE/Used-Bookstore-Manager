@@ -1,4 +1,4 @@
-package com.example.controller.dao;
+package com.dao;
 
 import com.example.utils.DatabaseConnection;
 import com.example.model.Book;
@@ -44,7 +44,7 @@ public class BookDao {
             }
 
         } catch (SQLException e) {
-            e.printStackTrace(); // Hoặc log lỗi
+            e.printStackTrace();
         }
 
         return books;
@@ -61,7 +61,7 @@ public class BookDao {
             ResultSet rs = stmt.executeQuery();
 
             while (rs.next()) {
-                bookList.add(mapResultSetToBook(rs)); // ← dùng phương thức ánh xạ đã có
+                bookList.add(mapResultSetToBook(rs));
             }
 
         } catch (SQLException e) {
@@ -90,6 +90,27 @@ public class BookDao {
             e.printStackTrace();
         }
         return books;
+    }
+
+    /**
+     * Lấy giá nhập của sách theo mã sách
+     */
+    public double getImportPrice(int bookId) {
+        String sql = "SELECT gia_nhap FROM sach WHERE ma_sach = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, bookId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getDouble("gia_nhap");
+                }
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return 0;
     }
 
     /**
@@ -219,7 +240,7 @@ public class BookDao {
             }
 
         } catch (SQLException e) {
-            e.printStackTrace(); // log lỗi
+            e.printStackTrace();
         }
         return null;
     }
@@ -227,24 +248,14 @@ public class BookDao {
     /**
      * Cập nhật tồn kho sau khi bán sách
      */
-    public boolean updateStock(int bookId, int quantityToSubtract) {
-        String sql = "UPDATE sach SET so_luong_ton = so_luong_ton - ? WHERE ma_sach = ?";
+    public void updateStockAfterOrderItems(Connection conn, List<OrderItem> items, String orderType) throws SQLException {
+        String sql;
 
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-            stmt.setInt(1, quantityToSubtract);
-            stmt.setInt(2, bookId);
-            return stmt.executeUpdate() > 0;
-
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return false;
+        if ("nhap_kho".equalsIgnoreCase(orderType)) {
+            sql = "UPDATE sach SET so_luong_ton = so_luong_ton + ? WHERE ma_sach = ?";
+        } else {
+            sql = "UPDATE sach SET so_luong_ton = so_luong_ton - ? WHERE ma_sach = ?";
         }
-    }
-
-    public void updateStockAfterOrder(Connection conn, List<OrderItem> items) throws SQLException {
-        String sql = "UPDATE sach SET so_luong_ton = so_luong_ton - ? WHERE ma_sach = ?";
 
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             for (OrderItem item : items) {
@@ -255,5 +266,4 @@ public class BookDao {
             stmt.executeBatch();
         }
     }
-
 }

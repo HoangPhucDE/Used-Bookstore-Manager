@@ -1,6 +1,6 @@
 package com.example.controller.dashboard;
 
-import com.example.controller.dao.DashboardDao;
+import com.dao.DashboardDao;
 import com.example.utils.CurrencyFormatter;
 import javafx.fxml.FXML;
 import javafx.scene.chart.AreaChart;

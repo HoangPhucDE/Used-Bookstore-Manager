@@ -1,7 +1,7 @@
 package com.example.controller.book;
 
 import com.example.controller.auth.LoginController;
-import com.example.controller.dao.BookDao;
+import com.dao.BookDao;
 import com.example.model.Book;
 import com.example.utils.CurrencyFormatter;
 import javafx.collections.FXCollections;
