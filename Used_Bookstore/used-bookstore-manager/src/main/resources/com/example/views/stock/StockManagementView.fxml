@@ -26,6 +26,7 @@
                     <TableColumn fx:id="colBookTitle" text="Tên sách" prefWidth="300"/>
                     <TableColumn fx:id="colQuantity" text="Số lượng" prefWidth="150"/>
                     <TableColumn fx:id="colDate" text="Ngày nhập" prefWidth="200"/>
+                    <TableColumn fx:id="colCondition" text="Tình trạng" prefWidth="200"/>
                     <TableColumn fx:id="colCreatedBy" text="Người nhập" prefWidth="200"/>
                 </columns>
             </TableView>

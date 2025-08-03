@@ -26,6 +26,7 @@ public class StockManagementController {
     @FXML private TableColumn<StockEntry, Integer> colQuantity;
     @FXML private TableColumn<StockEntry, String> colDate;
     @FXML private TableColumn<StockEntry, String> colCreatedBy;
+    @FXML private TableColumn<StockEntry, String> colCondition;
     @FXML private Button addStockBtn;
 
     private final StockDao stockDao = new StockDao();
@@ -37,6 +38,9 @@ public class StockManagementController {
         colQuantity.setCellValueFactory(cell -> new javafx.beans.property.SimpleIntegerProperty(cell.getValue().getQuantity()).asObject());
         colDate.setCellValueFactory(cell -> new javafx.beans.property.SimpleStringProperty(cell.getValue().getEntryDate().toString()));
         colCreatedBy.setCellValueFactory(cell -> new javafx.beans.property.SimpleStringProperty(cell.getValue().getCreatedBy()));
+
+        colCondition.setCellValueFactory(cell ->
+                new javafx.beans.property.SimpleStringProperty(cell.getValue().getCondition()));
 
         loadStockEntries();
 
