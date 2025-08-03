@@ -9,6 +9,8 @@ public class Customer {
     private String trangThai;
     private int accountId;        // MỚI: account_id
 
+    public Customer() {}
+
     public Customer(int maKh, String hoTen, String email, String soDienThoai, String diaChi, String trangThai, int accountId) {
         this.maKh = maKh;
         this.hoTen = hoTen;
