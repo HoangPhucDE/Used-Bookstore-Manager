@@ -26,7 +26,7 @@
     <!-- Main Content -->
     <center>
         <VBox spacing="15" style="-fx-padding: 20;">
-            <TableView fx:id="orderTable" style="-fx-background-radius: 10;">
+            <TableView fx:id="orderTable">
                 <columns>
                     <TableColumn fx:id="colId" text="#" prefWidth="50"/>
                     <TableColumn fx:id="colCustomerName" text="Khách hàng" prefWidth="180"/>
@@ -35,7 +35,7 @@
                     <TableColumn fx:id="colCreatedDate" text="Ngày tạo" prefWidth="120"/>
                     <TableColumn fx:id="colOrderType" text="Loại đơn" prefWidth="100"/>
                     <TableColumn fx:id="colStatus" text="Trạng thái" prefWidth="100"/>
-                    <TableColumn fx:id="colAction" text="Chi tiết" prefWidth="80"/>
+                  
                 </columns>
             </TableView>
 

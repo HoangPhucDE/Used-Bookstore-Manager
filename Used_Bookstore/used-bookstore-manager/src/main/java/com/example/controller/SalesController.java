@@ -36,7 +36,7 @@ public class SalesController {
 
         loadBooksFromDatabase();
 
-        orderTypeCombo.getItems().addAll("online", "offline", "trahang", "nhap_kho");
+        orderTypeCombo.getItems().addAll("online", "offline", "trahang", "nhapkho");
         orderTypeCombo.getSelectionModel().selectFirst();
 
         colBookTitle.setCellValueFactory(new PropertyValueFactory<>("bookTitle"));

@@ -35,8 +35,6 @@ public class OrderStatusController {
     @FXML private TableColumn<Order, String> colCreatedDate;
     @FXML private TableColumn<Order, String> colOrderType;
     @FXML private TableColumn<Order, String> colStatus;
-    @FXML private TableColumn<Order, Order> colAction;
-
     @FXML private ComboBox<String> statusCombo;
     @FXML private ComboBox<String> filterStatusCombo;
     @FXML private TextField searchField;
@@ -79,34 +77,12 @@ public class OrderStatusController {
         colOrderType.setCellValueFactory(data -> new ReadOnlyObjectWrapper<>(data.getValue().getOrderType()));
         colStatus.setCellValueFactory(data -> new ReadOnlyObjectWrapper<>(getDisplayStatus(data.getValue().getStatus())));
 
-        colAction.setCellFactory(getDetailButtonCellFactory());
-
         orderTable.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
             selectedOrder = newVal;
             if (newVal != null) {
                 statusCombo.setValue(getDisplayStatus(newVal.getStatus()));
             }
         });
-    }
-
-    private Callback<TableColumn<Order, Order>, TableCell<Order, Order>> getDetailButtonCellFactory() {
-        return col -> new TableCell<>() {
-            private final Button detailBtn = new Button("👁️");
-
-            {
-                detailBtn.setStyle("-fx-background-color: transparent; -fx-cursor: hand;");
-                detailBtn.setOnAction(e -> {
-                    Order order = getTableView().getItems().get(getIndex());
-                    showOrderDetails(order);
-                });
-            }
-
-            @Override
-            protected void updateItem(Order item, boolean empty) {
-                super.updateItem(item, empty);
-                setGraphic(empty || item == null ? null : detailBtn);
-            }
-        };
     }
 
     private void setupFilterControls() {

@@ -1,18 +1,25 @@
 package com.example.controller;
 
 import com.example.DatabaseConnection;
+import javafx.animation.FadeTransition;
+import javafx.animation.ScaleTransition;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
+import javafx.scene.Node;
 import javafx.scene.chart.AreaChart;
 import javafx.scene.chart.BarChart;
 import javafx.scene.chart.PieChart;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.Label;
+import javafx.scene.layout.VBox;
+import javafx.util.Duration;
 
 import java.sql.*;
 
 public class DashboardController {
+
+    @FXML private VBox rootVBox;
 
     @FXML private Label totalBooksLabel;
     @FXML private Label totalUsersLabel;
@@ -28,11 +35,47 @@ public class DashboardController {
 
     @FXML
     public void initialize() {
+        fadeIn(rootVBox); // hiệu ứng fade-in toàn dashboard
         setupStatistics();
         setupCategoryChart();
         setupRevenueChart();
         setupBookChart();
     }
+
+    /* ================= HIỆU ỨNG ================= */
+    private void fadeIn(Node node) {
+        FadeTransition ft = new FadeTransition(Duration.millis(800), node);
+        ft.setFromValue(0);
+        ft.setToValue(1);
+        ft.play();
+    }
+
+    private void pulse(Node node) {
+        ScaleTransition st = new ScaleTransition(Duration.millis(300), node);
+        st.setFromX(1.0);
+        st.setFromY(1.0);
+        st.setToX(1.15);
+        st.setToY(1.15);
+        st.setAutoReverse(true);
+        st.setCycleCount(2);
+        st.play();
+    }
+
+    @FXML
+    private void handleCardHoverEnter(javafx.scene.input.MouseEvent event) {
+        Node card = (Node) event.getSource();
+        card.setScaleX(1.05);
+        card.setScaleY(1.05);
+    }
+
+    @FXML
+    private void handleCardHoverExit(javafx.scene.input.MouseEvent event) {
+        Node card = (Node) event.getSource();
+        card.setScaleX(1.0);
+        card.setScaleY(1.0);
+    }
+
+   
 
     private void setupStatistics() {
         try (Connection conn = DatabaseConnection.getConnection()) {
@@ -40,7 +83,7 @@ public class DashboardController {
             ResultSet rs = conn.createStatement().executeQuery("SELECT COUNT(*) FROM sach");
             if (rs.next()) totalBooksLabel.setText(String.valueOf(rs.getInt(1)));
 
-            // Tổng người dùng (chỉ tính khách hàng)
+            // Tổng người dùng
             rs = conn.createStatement().executeQuery("SELECT COUNT(*) FROM taikhoan WHERE loai_nguoi_dung = 'khachhang'");
             if (rs.next()) totalUsersLabel.setText(String.valueOf(rs.getInt(1)));
 
@@ -67,9 +110,15 @@ public class DashboardController {
             """);
             if (rs.next()) todayBooksLabel.setText(String.valueOf(rs.getInt(1)));
 
-            // Người dùng mới hôm nay (giả định đã có cột ngay_dang_ky)
+            // Người dùng mới hôm nay
             rs = conn.createStatement().executeQuery("SELECT COUNT(*) FROM taikhoan WHERE DATE(ngay_dang_ky) = CURRENT_DATE");
             if (rs.next()) todayUsersLabel.setText(String.valueOf(rs.getInt(1)));
+
+            // Hiệu ứng pulse cho label số liệu
+            pulse(totalBooksLabel);
+            pulse(totalUsersLabel);
+            pulse(totalSalesLabel);
+            pulse(totalRevenueLabel);
 
         } catch (SQLException e) {
             e.printStackTrace();
@@ -90,6 +139,7 @@ public class DashboardController {
 
             categoryChart.setData(pieChartData);
             categoryChart.setTitle("Phân bố sách theo thể loại");
+            fadeIn(categoryChart);
 
         } catch (SQLException e) {
             e.printStackTrace();
@@ -121,6 +171,7 @@ public class DashboardController {
             revenueChart.getData().clear();
             revenueChart.getData().add(series);
             revenueChart.setTitle("Doanh thu 7 ngày qua");
+            fadeIn(revenueChart);
 
         } catch (SQLException e) {
             e.printStackTrace();
@@ -151,6 +202,7 @@ public class DashboardController {
             bookChart.getData().clear();
             bookChart.getData().add(series);
             bookChart.setTitle("Top 5 sách bán chạy");
+            fadeIn(bookChart);
 
         } catch (SQLException e) {
             e.printStackTrace();

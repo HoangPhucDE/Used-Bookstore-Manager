@@ -11,7 +11,7 @@
             fitToWidth="true"
             style="-fx-background-color: #f7f8fa;">
     
-    <VBox spacing="30" style="-fx-padding: 30;" alignment="TOP_CENTER">
+    <VBox fx:id="rootVBox" spacing="30" style="-fx-padding: 30;" alignment="TOP_CENTER">
 
         <!-- 🔷 Tiêu đề Tổng quan -->
         <Label text="📊 Tổng Quan Hệ Thống"
@@ -19,24 +19,28 @@
 
         <!-- 🔷 Tổng quan hệ thống -->
         <HBox spacing="20" alignment="CENTER">
-            <VBox spacing="10" style="-fx-background-color: linear-gradient(to right, #4e73df, #224abe); -fx-background-radius: 12; -fx-padding: 20; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 8, 0, 0, 2);">
+           <VBox fx:id="cardBooks" spacing="10" alignment="CENTER" style="-fx-background-color: linear-gradient(to right, #4e73df, #224abe); -fx-background-radius: 12; -fx-padding: 20; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 8, 0, 0, 2);"
+                 onMouseEntered="#handleCardHoverEnter" onMouseExited="#handleCardHoverExit">
                 <Label text="📚 Tổng sách" style="-fx-text-fill: white; -fx-font-size: 13px;"/>
                 <Label fx:id="totalBooksLabel" text="0" style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: white;"/>
             </VBox>
 
-            <VBox spacing="10" style="-fx-background-color: linear-gradient(to right, #1cc88a, #159b69); -fx-background-radius: 12; -fx-padding: 20;">
+            <VBox fx:id="cardUsers" spacing="10" alignment="CENTER" style="-fx-background-color: linear-gradient(to right, #1cc88a, #159b69); -fx-background-radius: 12; -fx-padding: 20;"
+                  onMouseEntered="#handleCardHoverEnter" onMouseExited="#handleCardHoverExit">
                 <Label text="👥 Người dùng" style="-fx-text-fill: white; -fx-font-size: 13px;"/>
                 <Label fx:id="totalUsersLabel" text="0" style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: white;"/>
             </VBox>
 
-            <VBox spacing="10" style="-fx-background-color: linear-gradient(to right, #f6c23e, #dda20a); -fx-background-radius: 12; -fx-padding: 20;">
+            <VBox fx:id="cardSales" spacing="10" alignment="CENTER" style="-fx-background-color: linear-gradient(to right, #f6c23e, #dda20a); -fx-background-radius: 12; -fx-padding: 20;"
+                  onMouseEntered="#handleCardHoverEnter" onMouseExited="#handleCardHoverExit">
                 <Label text="🛒 Đơn hàng" style="-fx-text-fill: white; -fx-font-size: 13px;"/>
                 <Label fx:id="totalSalesLabel" text="0" style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: white;"/>
             </VBox>
 
-            <VBox spacing="10" style="-fx-background-color: linear-gradient(to right, #e74a3b, #be2617); -fx-background-radius: 12; -fx-padding: 20;">
+            <VBox fx:id="cardRevenue" spacing="10" alignment="CENTER" style="-fx-background-color: linear-gradient(to right, #e74a3b, #be2617); -fx-background-radius: 12; -fx-padding: 20;"
+                  onMouseEntered="#handleCardHoverEnter" onMouseExited="#handleCardHoverExit">
                 <Label text="💰 Doanh thu" style="-fx-text-fill: white; -fx-font-size: 13px;"/>
-                <Label fx:id="totalRevenueLabel" text="0 ₫" style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: white;"/>
+                <Label fx:id="totalRevenueLabel" text="0 VNĐ" style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: white;"/>
             </VBox>
         </HBox>
 
@@ -59,7 +63,7 @@
                 </VBox>
                 <VBox spacing="5" alignment="CENTER" style="-fx-background-color: #f8f9fc; -fx-padding: 15; -fx-background-radius: 8;">
                     <Label text="💵 Doanh thu" style="-fx-font-size: 12px; -fx-text-fill: #6c757d;"/>
-                    <Label fx:id="todayRevenueLabel" text="0 ₫" style="-fx-font-size: 20px; -fx-font-weight: bold;"/>
+                    <Label fx:id="todayRevenueLabel" text="0 VNĐ" style="-fx-font-size: 20px; -fx-font-weight: bold;"/>
                 </VBox>
             </HBox>
         </VBox>
