@@ -1,21 +1,12 @@
 package com.example.controller.sales;
-import com.example.controller.auth.LoginController;
-import javafx.beans.property.ReadOnlyStringWrapper;
 
-import com.example.controller.dao.AccountDao;
-import com.example.controller.dao.BookDao;
-import com.example.controller.dao.CustomerDao;
-import com.example.controller.dao.OrderDao;
-import com.example.controller.dao.OrderItemDao;
+import com.example.controller.auth.LoginController;
+import com.example.controller.dao.*;
 import com.example.model.Book;
 import com.example.model.Customer;
 import com.example.model.OrderItem;
-import com.example.controller.dao.CustomerAccountService;
-import com.example.utils.BookDialogUtil;
-import com.example.utils.PdfExportUtils;
-import com.example.utils.ValidationUtils;
-
-import com.example.utils.DatabaseConnection;
+import com.example.utils.*;
+import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -26,14 +17,14 @@ import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 
 import java.io.File;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.text.NumberFormat;
 import java.util.*;
 
 public class SalesController {
 
     @FXML private ComboBox<String> bookCombo;
-    @FXML private ComboBox<String> orderTypeCombo;
     @FXML private TextField quantityField;
     @FXML private TableView<OrderItem> orderTable;
     @FXML private TableColumn<OrderItem, String> colBookTitle;
@@ -58,28 +49,43 @@ public class SalesController {
 
     @FXML
     public void initialize() {
-
-        orderTypeCombo.getItems().addAll(orderTypeMap.values());
-        orderTypeCombo.getSelectionModel().selectFirst();
-
         colBookTitle.setCellValueFactory(new PropertyValueFactory<>("bookTitle"));
         colQuantity.setCellValueFactory(new PropertyValueFactory<>("quantity"));
 
-        orderTable.setItems(cartItems);
+        colUnitPrice.setCellValueFactory(cellData ->
+                new ReadOnlyStringWrapper(cellData.getValue().getFormattedUnitPrice()));
+        colTotalPrice.setCellValueFactory(cellData ->
+                new ReadOnlyStringWrapper(cellData.getValue().getFormattedTotalPrice()));
 
-        loadBooksFromDatabase();
+        orderTable.setItems(cartItems);
+        orderTable.setEditable(true);
+        colQuantity.setCellFactory(TextFieldTableCell.forTableColumn(new javafx.util.converter.IntegerStringConverter()));
+        colQuantity.setOnEditCommit(event -> {
+            OrderItem item = event.getRowValue();
+            int newQuantity = event.getNewValue();
+            if (newQuantity <= 0) {
+                cartItems.remove(item);
+            } else {
+                item.setQuantity(newQuantity);
+            }
+            updateTotal();
+        });
+
         createAccountCheckbox.selectedProperty().addListener((obs, oldVal, newVal) -> {
             accountBox.setVisible(newVal);
             accountBox.setManaged(newVal);
+            usernameField.setVisible(newVal);
+            usernameField.setManaged(newVal);
+            passwordField.setVisible(newVal);
+            passwordField.setManaged(newVal);
         });
+
         orderTable.setRowFactory(tv -> {
             TableRow<OrderItem> row = new TableRow<>();
             row.setOnMouseClicked(event -> {
                 if (event.getClickCount() == 2 && !row.isEmpty()) {
                     Book book = bookDao.findBookById(row.getItem().getBookId());
-                    if (book != null) {
-                        BookDialogUtil.showBookDetails(book);
-                    }
+                    if (book != null) BookDialogUtil.showBookDetails(book);
                 }
             });
             return row;
@@ -89,58 +95,12 @@ public class SalesController {
             if (!newVal) autoFillCustomerInfo();
         });
 
-        createAccountCheckbox.selectedProperty().addListener((obs, oldVal, newVal) -> {
-            usernameField.setVisible(newVal);
-            usernameField.setManaged(newVal);
-            passwordField.setVisible(newVal);
-            passwordField.setManaged(newVal);
-        });
-
-        colUnitPrice.setCellValueFactory(cellData ->
-                new ReadOnlyStringWrapper(cellData.getValue().getFormattedUnitPrice()));
-
-        colTotalPrice.setCellValueFactory(cellData ->
-                new ReadOnlyStringWrapper(cellData.getValue().getFormattedTotalPrice()));
-
-        orderTable.setEditable(true);
-        colQuantity.setCellFactory(TextFieldTableCell.forTableColumn(new javafx.util.converter.IntegerStringConverter()));
-        colQuantity.setOnEditCommit(event -> {
-            OrderItem item = event.getRowValue();
-            int newQuantity = event.getNewValue();
-
-            // Nếu nhập 0 thì hỏi có muốn xóa khỏi giỏ không
-            if (newQuantity == 0) {
-                Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
-                confirm.setHeaderText("Bạn có muốn xoá sách này khỏi giỏ?");
-                confirm.setContentText(item.getBookTitle());
-                if (confirm.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK) {
-                    cartItems.remove(item);
-                } else {
-                    orderTable.refresh();
-                }
-                updateTotal();
-                return;
-            }
-
-            Book book = allBooks.stream()
-                    .filter(b -> b.getId() == item.getBookId())
-                    .findFirst().orElse(null);
-
-            if (book == null || newQuantity < 0 || newQuantity > book.getStock()) {
-                showError("Số lượng không hợp lệ hoặc vượt quá tồn kho.");
-                orderTable.refresh(); // khôi phục lại nếu sai
-                return;
-            }
-
-            item.setQuantity(newQuantity);
-            updateTotal();
-        });
+        loadBooksFromDatabase();
     }
 
     private void loadBooksFromDatabase() {
         allBooks.clear();
         allBooks.addAll(bookDao.getAvailableBooks());
-
         bookCombo.getItems().clear();
         for (Book b : allBooks) {
             bookCombo.getItems().add(b.getTitle());
@@ -158,10 +118,7 @@ public class SalesController {
         int quantity;
         try {
             quantity = Integer.parseInt(quantityField.getText());
-            if (quantity <= 0) {
-                showError("Số lượng phải lớn hơn 0.");
-                return;
-            }
+            if (quantity <= 0) throw new NumberFormatException();
         } catch (NumberFormatException e) {
             showError("Số lượng không hợp lệ.");
             return;
@@ -176,7 +133,6 @@ public class SalesController {
             return;
         }
 
-        // Kiểm tra xem sách đã có trong giỏ chưa
         Optional<OrderItem> existing = cartItems.stream()
                 .filter(item -> item.getBookId() == selectedBook.getId())
                 .findFirst();
@@ -184,14 +140,12 @@ public class SalesController {
         if (existing.isPresent()) {
             OrderItem item = existing.get();
             int newQuantity = item.getQuantity() + quantity;
-
             if (newQuantity > selectedBook.getStock()) {
                 showError("Vượt quá số lượng tồn kho: " + selectedBook.getStock());
                 return;
             }
-
-            item.setQuantity(newQuantity);  // cập nhật số lượng mới
-            orderTable.refresh();           // làm mới TableView
+            item.setQuantity(newQuantity);
+            orderTable.refresh();
         } else {
             if (quantity > selectedBook.getStock()) {
                 showError("Vượt quá số lượng tồn kho: " + selectedBook.getStock());
@@ -203,7 +157,6 @@ public class SalesController {
         quantityField.clear();
         updateTotal();
     }
-
 
     @FXML
     public void handleDeleteItem() {
@@ -218,13 +171,6 @@ public class SalesController {
 
     @FXML
     public void handleSubmitOrder() {
-        String selectedLabel = orderTypeCombo.getValue();
-        String orderType = orderTypeMap.entrySet().stream()
-                .filter(entry -> entry.getValue().equals(selectedLabel))
-                .map(Map.Entry::getKey)
-                .findFirst()
-                .orElse("offline");
-
         if (cartItems.isEmpty()) {
             showError("Chưa có sách trong giỏ hàng.");
             return;
@@ -246,8 +192,6 @@ public class SalesController {
             return;
         }
 
-        int createdById = LoginController.currentUserId;
-
         if (name.isEmpty() || phone.isEmpty()) {
             showError("Vui lòng điền đầy đủ thông tin khách hàng.");
             return;
@@ -262,7 +206,6 @@ public class SalesController {
                 showError("Vui lòng nhập username và mật khẩu để tạo tài khoản khách hàng.");
                 return;
             }
-
             if (accountDao.findAccountIdByUsername(username) != null) {
                 showError("Tên đăng nhập đã tồn tại. Vui lòng chọn tên khác.");
                 return;
@@ -275,12 +218,11 @@ public class SalesController {
 
         try (Connection conn = DatabaseConnection.getConnection()) {
             conn.setAutoCommit(false);
-
+            int createdById = LoginController.currentUserId;
             int accId = -1;
             if (createAccount) {
                 accId = accountService.createCustomerAccountIfNotExists(
-                        conn, username, password, email, name, phone, address
-                );
+                        conn, username, password, email, name, phone, address);
                 if (accId == -1) {
                     conn.rollback();
                     showError("Không thể tạo tài khoản khách hàng.");
@@ -289,7 +231,7 @@ public class SalesController {
             }
 
             OrderDao orderDao = new OrderDao();
-            int orderId = orderDao.insertOrder(conn, name, phone, email, address, createdById, orderType);
+            int orderId = orderDao.insertOrder(conn, name, phone, email, address, createdById, "offline");
 
             OrderItemDao orderItemDao = new OrderItemDao();
             orderItemDao.insertOrderItems(conn, orderId, cartItems);
@@ -314,7 +256,7 @@ public class SalesController {
                                 phone,
                                 email,
                                 address,
-                                orderType,
+                                "offline",
                                 new ArrayList<>(cartItems),
                                 totalAmount
                         );
@@ -339,7 +281,6 @@ public class SalesController {
     private void autoFillCustomerInfo() {
         String phone = phoneField.getText().trim();
         if (!ValidationUtils.isValidPhone(phone)) return;
-
         Customer customer = customerDao.findCustomerByPhoneWithoutStatus(phone);
         if (customer != null) {
             nameField.setText(customer.getHoTen());
@@ -370,7 +311,6 @@ public class SalesController {
         cartItems.clear();
         totalLabel.setText("0 VNĐ");
         bookCombo.getSelectionModel().clearSelection();
-        orderTypeCombo.getSelectionModel().selectFirst();
     }
 
     private void showError(String msg) {
@@ -388,9 +328,4 @@ public class SalesController {
         alert.setContentText(msg);
         alert.show();
     }
-    private final Map<String, String> orderTypeMap = Map.of(
-            "offline", "Bán tại quầy",
-            "trahang", "Trả hàng",
-            "nhap_kho", "Nhập kho"
-    );
 }

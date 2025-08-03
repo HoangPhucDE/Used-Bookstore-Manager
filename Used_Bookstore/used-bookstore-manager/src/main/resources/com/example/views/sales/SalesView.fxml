@@ -67,7 +67,7 @@
                     <TextField fx:id="addressField" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
 
                     <Label text="📦 Loại đơn:" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
-                    <ComboBox fx:id="orderTypeCombo" promptText="Chọn loại đơn"
+                    <ComboBox fx:id="orderTypeCombo" promptText="Bán tại cửa hàng"
                               GridPane.rowIndex="4" GridPane.columnIndex="1"/>
 
                     <Label text="🔐 Tạo tài khoản?" GridPane.rowIndex="5" GridPane.columnIndex="0"/>
