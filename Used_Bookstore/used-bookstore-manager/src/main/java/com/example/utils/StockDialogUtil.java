@@ -98,7 +98,6 @@ public class StockDialogUtil {
             }
             return null;
         });
-
         return dialog.showAndWait();
     }
 
@@ -122,6 +121,29 @@ public class StockDialogUtil {
         conditionBox.setPrefWidth(100);
         conditionBox.setPromptText("Tình trạng");
         conditionBox.setValue(condition);
+
+        // ✅ Ánh xạ chữ có dấu để hiển thị đẹp
+        conditionBox.setConverter(new javafx.util.StringConverter<>() {
+            @Override
+            public String toString(String code) {
+                return switch (code) {
+                    case "moi" -> "Mới";
+                    case "tot" -> "Tốt";
+                    case "cu" -> "Cũ";
+                    default -> "Không rõ";
+                };
+            }
+
+            @Override
+            public String fromString(String display) {
+                return switch (display) {
+                    case "Mới" -> "moi";
+                    case "Tốt" -> "tot";
+                    case "Cũ" -> "cu";
+                    default -> "cu";
+                };
+            }
+        });
 
         HBox rowBox = new HBox(10, new Label("Sách:"), bookCombo,
                 new Label("SL:"), quantityField,
