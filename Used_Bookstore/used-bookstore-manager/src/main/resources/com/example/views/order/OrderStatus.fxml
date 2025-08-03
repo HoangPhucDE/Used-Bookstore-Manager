@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx/11.0.1"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.example.controller.order.OrderStatusController"
+            style="-fx-background-color: #f5f6fa;">
+
+    <!-- Header -->
+    <top>
+        <HBox alignment="CENTER_LEFT" spacing="15"
+              style="-fx-background-color: white; -fx-padding: 20 30;">
+            <Label text="📦 Quản lý đơn hàng"
+                   style="-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <TextField fx:id="searchField" promptText="Tìm kiếm theo tên hoặc SĐT"
+                       style="-fx-pref-width: 250; -fx-background-radius: 20; -fx-padding: 6 12;"/>
+            <ComboBox fx:id="filterStatusCombo" promptText="Lọc trạng thái"
+                      style="-fx-background-radius: 20; -fx-padding: 6 12;" prefWidth="160"/>
+        </HBox>
+    </top>
+
+    <!-- Main Content -->
+    <center>
+        <VBox spacing="15" style="-fx-padding: 20;">
+            <TableView fx:id="orderTable">
+                <columns>
+                    <TableColumn fx:id="colId" text="#" prefWidth="50"/>
+                    <TableColumn fx:id="colCustomerName" text="Khách hàng" prefWidth="180"/>
+                    <TableColumn fx:id="colPhone" text="SĐT" prefWidth="120"/>
+                    <TableColumn fx:id="colTotal" text="Tổng tiền" prefWidth="100"/>
+                    <TableColumn fx:id="colCreatedDate" text="Ngày tạo" prefWidth="120"/>
+                    <TableColumn fx:id="colOrderType" text="Loại đơn" prefWidth="100"/>
+                    <TableColumn fx:id="colStatus" text="Trạng thái" prefWidth="100"/>
+                  
+                </columns>
+            </TableView>
+
+            <HBox spacing="10" alignment="CENTER_LEFT">
+                <Label text="Trạng thái mới:" style="-fx-font-weight: bold;"/>
+                <ComboBox fx:id="statusCombo" promptText="Cập nhật trạng thái" prefWidth="180"/>
+                <Button fx:id="updateStatusBtn" text="💾 Lưu thay đổi" onAction="#handleUpdateStatus"
+                        style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-background-radius: 20; -fx-padding: 6 18;"/>
+            </HBox>
+        </VBox>
+    </center>
+
+</BorderPane>

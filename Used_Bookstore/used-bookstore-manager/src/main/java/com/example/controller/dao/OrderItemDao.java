@@ -1,6 +1,6 @@
 package com.example.controller.dao;
 
-import com.example.DatabaseConnection;
+import com.example.utils.DatabaseConnection;
 import com.example.model.OrderItem;
 
 import java.sql.Connection;
@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class OrderItemDao {
+
     public List<OrderItem> getOrderItemsByOrderId(int orderId) {
         List<OrderItem> items = new ArrayList<>();
         String sql = """
@@ -40,5 +41,18 @@ public class OrderItemDao {
             e.printStackTrace(); // hoặc log lỗi tùy ý
         }
         return items;
+    }
+    public void insertOrderItems(Connection conn, int orderId, List<OrderItem> items) throws SQLException {
+        String sql = "INSERT INTO chitiet_donhang (ma_don, ma_sach, so_luong, don_gia) VALUES (?, ?, ?, ?)";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            for (OrderItem item : items) {
+                stmt.setInt(1, orderId);
+                stmt.setInt(2, item.getBookId());
+                stmt.setInt(3, item.getQuantity());
+                stmt.setDouble(4, item.getUnitPrice());
+                stmt.addBatch();
+            }
+            stmt.executeBatch();
+        }
     }
 }

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane fx:controller="com.example.controller.stock.StockManagementController"
+            xmlns:fx="http://javafx.com/fxml" prefWidth="900" prefHeight="600">
+
+    <center>
+        <VBox spacing="15" style="-fx-padding: 20;">
+            <Label text="📦 Quản lý nhập kho" style="-fx-font-size: 20px; -fx-font-weight: bold;"/>
+
+            <TableView fx:id="stockTable" prefHeight="500">
+                <columns>
+                    <TableColumn fx:id="colId" text="ID" prefWidth="50"/>
+                    <TableColumn fx:id="colBookTitle" text="Tên sách" prefWidth="300"/>
+                    <TableColumn fx:id="colQuantity" text="Số lượng" prefWidth="100"/>
+                    <TableColumn fx:id="colDate" text="Ngày nhập" prefWidth="150"/>
+                </columns>
+            </TableView>
+        </VBox>
+    </center>
+</BorderPane>
