@@ -89,6 +89,26 @@ CREATE TABLE chitiet_donhang (
     FOREIGN KEY (ma_sach) REFERENCES sach(ma_sach) ON DELETE CASCADE
 );
 
+-- 8. Bảng phiếu nhập (để quản lý nhập kho)
+CREATE TABLE phieu_nhap (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    ngay_nhap DATE NOT NULL DEFAULT (CURRENT_DATE),
+    nguoi_tao_id INT NOT NULL,
+    ghi_chu TEXT,
+    FOREIGN KEY (nguoi_tao_id) REFERENCES taikhoan(id) ON DELETE CASCADE
+);
+
+-- 9. Bàng chi tiết phiếu nhập
+CREATE TABLE chitiet_phieunhap (
+    ma_phieu INT,
+    ma_sach INT,
+    so_luong INT NOT NULL CHECK (so_luong > 0),
+    don_gia DOUBLE NOT NULL CHECK (don_gia >= 0),
+    PRIMARY KEY (ma_phieu, ma_sach),
+    FOREIGN KEY (ma_phieu) REFERENCES phieu_nhap(id) ON DELETE CASCADE,
+    FOREIGN KEY (ma_sach) REFERENCES sach(ma_sach) ON DELETE CASCADE
+);
+
 USE Used_Bookstore;
 
 -- 1. Tài khoản
@@ -99,20 +119,30 @@ INSERT INTO taikhoan (username, mat_khau, vai_tro, loai_nguoi_dung, email, trang
 ('phamhoa_admin', 'hoa123@Admin', 'admin', 'nhanvien', 'phamhoa@example.com', TRUE, NOW()),
 ('phuocnv', 'phuoc123@Nv', 'user', 'nhanvien', 'phuoc.nv@example.com', TRUE, NOW()),
 ('vananh_khach', 'vananh123@Khach', 'khach', 'khachhang', 'vananh.kh@example.com', TRUE, NOW()),
-('tuananh_khach', 'tuananh123@Khach', 'khach', 'khachhang', 'tuananh.kh@example.com', TRUE, NOW());
+('tuananh_khach', 'tuananh123@Khach', 'khach', 'khachhang', 'tuananh.kh@example.com', TRUE, NOW()),
+('kimanh_staff', 'kim123@Nv', 'user', 'nhanvien', 'kimanh.staff@example.com', TRUE, NOW()),
+('luongadmin', 'luong@Admin', 'admin', 'nhanvien', 'luong.admin@example.com', TRUE, NOW()),
+('quanguser', 'quang@Nv', 'user', 'nhanvien', 'quang.nv@example.com', TRUE, NOW());
 
 -- 2. Nhân viên
 INSERT INTO nhanvien (ho_ten, ngay_sinh, sdt, chuc_vu, trang_thai, id_taikhoan) VALUES
 ('Nguyễn Thị Quyên', '1985-05-20', '0901123456', 'Quản lý', TRUE, 1),
 ('Lê Minh Tuấn', '1992-09-12', '0987123456', 'Bán hàng', TRUE, 2),
 ('Phạm Thị Hoa', '1989-06-20', '0911000011', 'Quản lý kho', TRUE, 4),
-('Lê Phước', '1992-02-14', '0911000012', 'Thu ngân', TRUE, 5);
+('Lê Phước', '1992-02-14', '0911000012', 'Thu ngân', TRUE, 5),
+('Kim Ánh', '1991-11-11', '0909222111', 'Nhập liệu', TRUE, 8),
+('Lương Văn Bình', '1988-04-03', '0913456789', 'Quản trị hệ thống', TRUE, 9),
+('Phan Quang', '1994-08-25', '0989333444', 'Chăm sóc khách hàng', TRUE, 10);
 
 -- 3. Khách hàng
 INSERT INTO khachhang (ho_ten, email, sdt, dia_chi, id_taikhoan) VALUES
-('Trần Anh Dũng', 'anhdung.tran@gmail.com', '0912121212', '123 Pasteur, P.6, Q.3, TP.HCM', 3),
+('Trần Anh Dũng', 'anhdung.tran@gmail.com', '0912121212', '123 Pasteur, Q.3, TP.HCM', 3),
 ('Nguyễn Vân Anh', 'vananh.kh@example.com', '0911222333', '45 Nguyễn Trãi, Q.5, TP.HCM', 6),
-('Đỗ Tuấn Anh', 'tuananh.kh@example.com', '0911444555', '88 Lý Thường Kiệt, Q.10, TP.HCM', 7);
+('Đỗ Tuấn Anh', 'tuananh.kh@example.com', '0911444555', '88 Lý Thường Kiệt, Q.10, TP.HCM', 7),
+('Lê Thanh Hà', 'thanhha.kh@example.com', '0909888777', '12 Trần Hưng Đạo, Q.1, TP.HCM', NULL),
+('Phạm Thị Ngọc', 'ngocpham.kh@example.com', '0909666555', '99 Hai Bà Trưng, Q.3, TP.HCM', NULL),
+('Huỳnh Minh Nhật', 'nhat.huynh@example.com', '0909555111', '100 Cách Mạng Tháng 8, Q.10', NULL),
+('Trịnh Văn Cường', 'cuongtv.kh@example.com', '0911223344', '22 Hoàng Văn Thụ, Q.Phú Nhuận', NULL);
 
 -- 4. Sách
 INSERT INTO sach (
@@ -140,13 +170,19 @@ INSERT INTO giohang (ma_kh, ma_sach, so_luong) VALUES
 (1, 3, 1),
 (2, 4, 1),
 (2, 5, 2),
-(3, 6, 1);
+(3, 6, 1),
+(4, 2, 1),
+(5, 8, 1),
+(6, 9, 2);
 
 -- 6. Đơn hàng
 INSERT INTO donhang (loai_don, nguoi_tao_id, ten_kh, sdt, email, dia_chi, tong_tien, trang_thai) VALUES
-('online', 3, 'Trần Anh Dũng', '0912121212', 'anhdung.tran@gmail.com', '123 Pasteur, P.6, Q.3, TP.HCM', 205000, 'cho_duyet'),
+('online', 3, 'Trần Anh Dũng', '0912121212', 'anhdung.tran@gmail.com', '123 Pasteur, Q.3, TP.HCM', 205000, 'cho_duyet'),
 ('online', 6, 'Nguyễn Vân Anh', '0911222333', 'vananh.kh@example.com', '45 Nguyễn Trãi, Q.5, TP.HCM', 223000, 'cho_duyet'),
-('online', 7, 'Đỗ Tuấn Anh', '0911444555', 'tuananh.kh@example.com', '88 Lý Thường Kiệt, Q.10, TP.HCM', 120000, 'cho_duyet');
+('online', 7, 'Đỗ Tuấn Anh', '0911444555', 'tuananh.kh@example.com', '88 Lý Thường Kiệt, Q.10, TP.HCM', 120000, 'cho_duyet'),
+('offline', 2, 'Nguyễn Vân Anh', '0911222333', 'vananh.kh@example.com', '45 Nguyễn Trãi, Q.5, TP.HCM', 95000, 'hoan_thanh'),
+('offline', 1, 'Lê Thanh Hà', '0909888777', 'thanhha.kh@example.com', '12 Trần Hưng Đạo', 85000, 'hoan_thanh'),
+('offline', 1, 'Phạm Thị Ngọc', '0909666555', 'ngocpham.kh@example.com', '99 Hai Bà Trưng', 170000, 'hoan_thanh');
 
 -- 7. Chi tiết đơn hàng
 INSERT INTO chitiet_donhang (ma_don, ma_sach, so_luong, don_gia) VALUES
@@ -154,4 +190,51 @@ INSERT INTO chitiet_donhang (ma_don, ma_sach, so_luong, don_gia) VALUES
 (1, 3, 1, 120000),
 (2, 4, 1, 135000),
 (2, 5, 1, 88000),
-(3, 6, 1, 120000);
+(3, 6, 1, 120000),
+(4, 2, 1, 95000),
+(5, 1, 1, 85000),
+(6, 3, 1, 120000),
+(6, 4, 1, 135000);
+
+-- 8. Phiếu Nhập
+INSERT INTO phieu_nhap (id, ngay_nhap, nguoi_tao_id, ghi_chu) VALUES
+(1, '2025-07-01', 1, 'Nhập sách phát triển bản thân đầu tháng 7'),
+(2, '2025-07-03', 4, 'Nhập sách tiểu thuyết phổ biến'),
+(3, '2025-07-05', 1, 'Bổ sung sách giáo trình Python'),
+(4, '2025-07-08', 4, 'Nhập sách tâm lý học và kinh tế'),
+(5, '2025-07-12', 1, 'Bổ sung sách khoa học và truyền cảm hứng'),
+(6, '2025-07-15', 4, 'Nhập sách trinh thám mới'),
+(7, '2025-07-20', 1, 'Nhập sách tâm linh và xã hội'),
+(8, '2025-07-22', 4, 'Nhập combo sách phát triển cá nhân'),
+(9, '2025-07-25', 1, 'Bổ sung các tựa sách bán chạy'),
+(10, '2025-07-30', 4, 'Cuối tháng kiểm kê nhập thêm');
+
+-- 9. Chi tiết phiếu nhập 
+INSERT INTO chitiet_phieunhap (ma_phieu, ma_sach, so_luong, don_gia) VALUES
+(1, 1, 20, 50000),
+(1, 5, 15, 50000),
+(1, 9, 25, 60000),
+
+(2, 2, 12, 60000),
+(2, 10, 8, 75000),
+
+(3, 3, 30, 80000),
+
+(4, 4, 18, 85000),
+(4, 14, 10, 130000),
+
+(5, 8, 10, 95000),
+(5, 13, 20, 55000),
+
+(6, 7, 15, 90000),
+
+(7, 6, 22, 70000),
+(7, 11, 18, 95000),
+
+(8, 12, 14, 85000),
+(8, 1, 10, 50000),
+
+(9, 9, 20, 60000),
+(9, 3, 10, 80000),
+
+(10, 15, 12, 70000);
