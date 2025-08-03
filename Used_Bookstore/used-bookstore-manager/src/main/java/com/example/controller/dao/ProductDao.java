@@ -1,6 +1,6 @@
 package com.example.controller.dao;
 
-import com.example.DatabaseConnection;
+import com.example.utils.DatabaseConnection;
 import com.example.model.Product;
 
 import java.sql.*;

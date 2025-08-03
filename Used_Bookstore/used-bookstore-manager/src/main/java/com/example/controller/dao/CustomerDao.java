@@ -1,6 +1,6 @@
 package com.example.controller.dao;
 
-import com.example.DatabaseConnection;
+import com.example.utils.DatabaseConnection;
 import com.example.model.Customer;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -46,6 +46,29 @@ public class CustomerDao {
     /**
      * Tìm thông tin khách hàng theo SĐT
      */
+    public Customer findCustomerByPhoneWithoutStatus(String phone) {
+        String query = "SELECT ma_kh, ho_ten, email, sdt, dia_chi FROM khachhang WHERE sdt = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+
+            stmt.setString(1, phone);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    Customer customer = new Customer();
+                    customer.setMaKh(rs.getInt("ma_kh"));
+                    customer.setHoTen(rs.getString("ho_ten"));
+                    customer.setEmail(rs.getString("email"));
+                    customer.setSoDienThoai(rs.getString("sdt"));
+                    customer.setDiaChi(rs.getString("dia_chi"));
+                    return customer;
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
     public Customer findCustomerByPhone(String sdt) {
         String sql = "SELECT * FROM khachhang WHERE sdt = ?";
         try (Connection conn = DatabaseConnection.getConnection();
@@ -72,7 +95,6 @@ public class CustomerDao {
 
         return null;
     }
-
 
     public Customer findCustomerByAccountId(int accountId) {
         String sql = """

@@ -1,12 +1,11 @@
 package com.example.controller.dao;
 
-import com.example.DatabaseConnection;
+import com.example.utils.DatabaseConnection;
 import com.example.model.RevenueByBook;
 import com.example.model.RevenueByDate;
 import com.example.model.RevenueByEmployee;
 
 import java.sql.*;
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 

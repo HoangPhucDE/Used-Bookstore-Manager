@@ -1,10 +1,9 @@
 package com.example.controller.dao;
 
-import com.example.DatabaseConnection;
+import com.example.utils.DatabaseConnection;
 import com.example.model.StockEntry;
 
 import java.sql.*;
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 

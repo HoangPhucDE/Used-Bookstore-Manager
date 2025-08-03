@@ -1,6 +1,6 @@
 package com.example.controller.dao;
 
-import com.example.DatabaseConnection;
+import com.example.utils.DatabaseConnection;
 import com.example.model.OrderItem;
 
 import java.sql.Connection;

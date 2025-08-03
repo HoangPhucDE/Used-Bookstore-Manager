@@ -1,6 +1,6 @@
 package com.example.controller.dao;
 
-import com.example.DatabaseConnection;
+import com.example.utils.DatabaseConnection;
 
 import java.sql.*;
 
@@ -9,7 +9,7 @@ public class AccountDao {
     // ✅ Tìm ID tài khoản theo username (dùng kết nối bên ngoài)
     public Integer findAccountIdByUsername(String username) {
         String sql = "SELECT id FROM taikhoan WHERE username = ?";
-        try (Connection conn = com.example.DatabaseConnection.getConnection();
+        try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setString(1, username);
@@ -25,7 +25,7 @@ public class AccountDao {
     // ✅ Kiểm tra email tồn tại (dùng kết nối bên ngoài)
     public boolean isEmailExists(String email) {
         String sql = "SELECT id FROM taikhoan WHERE email = ?";
-        try (Connection conn = com.example.DatabaseConnection.getConnection();
+        try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setString(1, email);
