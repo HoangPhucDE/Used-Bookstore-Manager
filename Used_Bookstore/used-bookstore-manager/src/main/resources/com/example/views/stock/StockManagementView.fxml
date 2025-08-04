@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<BorderPane fx:controller="com.example.controller.stock.StockManagementController"
+            xmlns:fx="http://javafx.com/fxml"
+            prefWidth="1200" prefHeight="800"
+            style="-fx-background-color: #f5f6fa;">
+
+    <top>
+        <HBox spacing="20" alignment="CENTER_LEFT"
+              style="-fx-padding: 20; -fx-background-color: white; -fx-border-color: #dcdde1; -fx-border-width: 0 0 1 0;">
+            <Label text="📦 Quản lý nhập kho" style="-fx-font-size: 20px; -fx-font-weight: bold;"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Button fx:id="addStockBtn" text="➕ Nhập kho mới"
+                    style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-background-radius: 8; -fx-padding: 8 18;"/>
+        </HBox>
+    </top>
+
+    <center>
+        <VBox spacing="10" style="-fx-padding: 20;">
+            <TableView fx:id="stockTable" prefHeight="600">
+                <columns>
+                    <TableColumn fx:id="colId" text="Mã phiếu" prefWidth="100"/>
+                    <TableColumn fx:id="colBookTitle" text="Tên sách" prefWidth="300"/>
+                    <TableColumn fx:id="colQuantity" text="Số lượng" prefWidth="150"/>
+                    <TableColumn fx:id="colDate" text="Ngày nhập" prefWidth="200"/>
+                    <TableColumn fx:id="colCondition" text="Tình trạng" prefWidth="200"/>
+                    <TableColumn fx:id="colCreatedBy" text="Người nhập" prefWidth="200"/>
+                </columns>
+            </TableView>
+        </VBox>
+    </center>
+
+</BorderPane>
