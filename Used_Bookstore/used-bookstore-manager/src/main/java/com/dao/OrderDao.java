@@ -33,7 +33,7 @@ public class OrderDao {
             }
 
         } catch (SQLException e) {
-            e.printStackTrace(); // Có thể ghi log nếu cần
+            e.printStackTrace();
         }
 
         return orders;
