@@ -33,17 +33,19 @@ public class OrderDao {
             }
 
         } catch (SQLException e) {
-            e.printStackTrace(); // Có thể ghi log nếu cần
+            e.printStackTrace();
         }
 
         return orders;
     }
 
-    public int insertOrder(Connection conn, String tenKH, String sdt, String email, String diaChi, int nguoiTaoId, String loaiDon) throws SQLException {
+    public int insertOrder(Connection conn, String tenKH, String sdt, String email,
+                           String diaChi, int nguoiTaoId, double totalAmount, String loaiDon) throws SQLException {
         String sql = """
         INSERT INTO donhang (ten_kh, sdt, email, dia_chi, nguoi_tao_id, ngay_tao, loai_don, tong_tien)
-        VALUES (?, ?, ?, ?, ?, NOW(), ?, 0)
+        VALUES (?, ?, ?, ?, ?, NOW(), ?, ?)
     """;
+
         try (PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             stmt.setString(1, tenKH);
             stmt.setString(2, sdt);
@@ -51,6 +53,7 @@ public class OrderDao {
             stmt.setString(4, diaChi);
             stmt.setInt(5, nguoiTaoId);
             stmt.setString(6, loaiDon);
+            stmt.setDouble(7, totalAmount);
             stmt.executeUpdate();
 
             ResultSet rs = stmt.getGeneratedKeys();

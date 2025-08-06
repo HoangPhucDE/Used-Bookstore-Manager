@@ -120,7 +120,7 @@ private void handleBackToLogin() {
             
             try (PreparedStatement stmt = conn.prepareStatement(insertAccountSql, Statement.RETURN_GENERATED_KEYS)) {
                 stmt.setString(1, username);
-                stmt.setString(2, password); // Trong thực tế nên hash password
+                stmt.setString(2, password);
                 stmt.setString(3, role);
                 stmt.setString(4, email);
                 

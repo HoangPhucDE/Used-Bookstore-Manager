@@ -24,7 +24,7 @@ import java.util.*;
 
 public class SalesController {
 
-    @FXML private ComboBox<String> bookCombo;
+    @FXML private ComboBox<Book> bookCombo;
     @FXML private TextField quantityField;
     @FXML private TableView<OrderItem> orderTable;
     @FXML private TableColumn<OrderItem, String> colBookTitle;
@@ -101,16 +101,14 @@ public class SalesController {
     private void loadBooksFromDatabase() {
         allBooks.clear();
         allBooks.addAll(bookDao.getAvailableBooks());
-        bookCombo.getItems().clear();
-        for (Book b : allBooks) {
-            bookCombo.getItems().add(b.getTitle());
-        }
+        bookCombo.setItems(FXCollections.observableArrayList(allBooks));
+        bookCombo.setConverter(BookUtils.getBookStringConverter());
     }
 
     @FXML
     public void handleAddItem() {
-        String bookTitle = bookCombo.getValue();
-        if (bookTitle == null || quantityField.getText().isEmpty()) {
+        Book selectedBook = bookCombo.getValue();
+        if (selectedBook == null || quantityField.getText().isEmpty()) {
             showError("Vui lòng chọn sách và nhập số lượng.");
             return;
         }
@@ -121,15 +119,6 @@ public class SalesController {
             if (quantity <= 0) throw new NumberFormatException();
         } catch (NumberFormatException e) {
             showError("Số lượng không hợp lệ.");
-            return;
-        }
-
-        Book selectedBook = allBooks.stream()
-                .filter(b -> b.getTitle().equals(bookTitle))
-                .findFirst().orElse(null);
-
-        if (selectedBook == null) {
-            showError("Không tìm thấy sách.");
             return;
         }
 
@@ -151,7 +140,7 @@ public class SalesController {
                 showError("Vượt quá số lượng tồn kho: " + selectedBook.getStock());
                 return;
             }
-            cartItems.add(new OrderItem(selectedBook.getId(), bookTitle, quantity, selectedBook.getPrice()));
+            cartItems.add(new OrderItem(selectedBook.getId(), selectedBook.getTitle(), quantity, selectedBook.getPrice()));
         }
 
         quantityField.clear();
@@ -231,7 +220,7 @@ public class SalesController {
             }
 
             OrderDao orderDao = new OrderDao();
-            int orderId = orderDao.insertOrder(conn, name, phone, email, address, createdById, "offline");
+            int orderId = orderDao.insertOrder(conn, name, phone, email, address, createdById, totalAmount,"offline");
 
             OrderItemDao orderItemDao = new OrderItemDao();
             orderItemDao.insertOrderItems(conn, orderId, cartItems);

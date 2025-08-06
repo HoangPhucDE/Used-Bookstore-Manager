@@ -98,8 +98,7 @@ public class LoginController {
 
             // Đảm bảo full màn hình
             stage.setMaximized(true);
-            // Hoặc sử dụng setFullScreen(true) nếu muốn full screen thật sự
-            // stage.setFullScreen(true);
+
 
             stage.show();
         } catch (IOException e) {

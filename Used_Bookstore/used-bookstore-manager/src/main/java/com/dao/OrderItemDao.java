@@ -38,7 +38,7 @@ public class OrderItemDao {
             }
 
         } catch (SQLException e) {
-            e.printStackTrace(); // hoặc log lỗi tùy ý
+            e.printStackTrace(); //
         }
         return items;
     }
