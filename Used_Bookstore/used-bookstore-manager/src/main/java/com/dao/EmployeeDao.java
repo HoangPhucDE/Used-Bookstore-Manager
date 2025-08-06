@@ -138,7 +138,7 @@ public class EmployeeDao {
 
             stmt.setString(1, emp.getName());
             stmt.setString(2, emp.getPhone());
-            stmt.setString(3, emp.getChucVu()); // ✅ sửa đúng cột
+            stmt.setString(3, emp.getChucVu()); // sửa đúng cột
             stmt.setDate(4, Date.valueOf(emp.getNgaySinh()));
             stmt.setInt(5, Integer.parseInt(emp.getId()));
             stmt.executeUpdate();

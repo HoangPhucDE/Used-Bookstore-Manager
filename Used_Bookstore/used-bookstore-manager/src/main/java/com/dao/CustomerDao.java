@@ -10,7 +10,7 @@ import java.sql.*;
 public class CustomerDao {
 
     /**
-     * ✅ Kiểm tra khách hàng đã tồn tại theo ID tài khoản
+     * Kiểm tra khách hàng đã tồn tại theo ID tài khoản
      */
     public boolean customerExistsByAccountId(int accountId) {
         String sql = "SELECT ma_kh FROM khachhang WHERE id_taikhoan = ?";
