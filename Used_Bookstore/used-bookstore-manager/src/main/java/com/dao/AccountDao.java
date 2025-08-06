@@ -6,7 +6,7 @@ import java.sql.*;
 
 public class AccountDao {
 
-    // Tìm ID tài khoản theo username (dùng kết nối bên ngoài)
+
     public Integer findAccountIdByUsername(String username) {
         String sql = "SELECT id FROM taikhoan WHERE username = ?";
         try (Connection conn = DatabaseConnection.getConnection();
@@ -22,7 +22,7 @@ public class AccountDao {
         return null;
     }
 
-    // Kiểm tra email tồn tại (dùng kết nối bên ngoài)
+
     public boolean isEmailExists(String email) {
         String sql = "SELECT id FROM taikhoan WHERE email = ?";
         try (Connection conn = DatabaseConnection.getConnection();
@@ -38,7 +38,7 @@ public class AccountDao {
         return false;
     }
 
-    // Tạo tài khoản mới
+
     public int createNewCustomerAccount(Connection conn, String username, String password, String email) throws SQLException {
         String sql = """
             INSERT INTO taikhoan (username, mat_khau, vai_tro, loai_nguoi_dung, email, trang_thai, ngay_dang_ky)
